@@ -10,6 +10,9 @@ import AiSummary from './ai-summary';
 import WeatherAlerts from './weather-alerts';
 import { Skeleton } from './ui/skeleton';
 import AirQuality from './air-quality';
+import { Button } from './ui/button';
+import Link from 'next/link';
+import { Leaf } from 'lucide-react';
 
 function LoadingSkeleton() {
     return (
@@ -86,14 +89,14 @@ export default function WeatherApp() {
                 <div className="animate-in fade-in-0 duration-500">
                     <CurrentWeather data={weatherData.current} />
                 </div>
-                
-                <div className="grid md:grid-cols-2 gap-6">
-                    <div className="animate-in fade-in-0 duration-700">
-                        <AiSummary todayForecast={todayForecast} airQuality={weatherData.current.airQuality} />
-                    </div>
-                    <div className="animate-in fade-in-0 duration-700">
-                        <AirQuality data={weatherData.current.airQuality} />
-                    </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="animate-in fade-in-0 duration-700">
+                      <AiSummary todayForecast={todayForecast} airQuality={weatherData.current.airQuality} />
+                  </div>
+                  <div className="animate-in fade-in-0 duration-700">
+                      <AirQuality data={weatherData.current.airQuality} />
+                  </div>
                 </div>
 
                 <div className="animate-in fade-in-0 duration-900">
@@ -104,8 +107,28 @@ export default function WeatherApp() {
                     <DailyForecast data={weatherData.daily} />
                 </div>
 
-                <div className="animate-in fade-in-0 duration-1000">
-                    <WeatherAlerts currentData={weatherData.current} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="animate-in fade-in-0 duration-1000">
+                        <WeatherAlerts currentData={weatherData.current} />
+                    </div>
+                    <div className="animate-in fade-in-0 duration-1000 flex flex-col">
+                        <Card className="flex-grow">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-primary">
+                                    <Leaf />
+                                    Agricultural Guidance
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex flex-col items-center justify-center text-center h-full">
+                                <p className="mb-4 text-muted-foreground">Get AI-powered advice on what to plant based on the weather forecast.</p>
+                                <Button asChild>
+                                    <Link href="/agriculture">
+                                        View Agricultural Info
+                                    </Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
             </div>
         </div>
