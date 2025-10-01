@@ -12,7 +12,7 @@ import { Skeleton } from './ui/skeleton';
 import AirQuality from './air-quality';
 import { Button } from './ui/button';
 import Link from 'next/link';
-import { Leaf, ShieldAlert } from 'lucide-react';
+import { Leaf, ShieldAlert, Siren } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 function LoadingSkeleton() {
@@ -132,23 +132,43 @@ export default function WeatherApp() {
                     </div>
                 </div>
 
-                 <div className="animate-in fade-in-0 duration-1000">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-primary">
-                                <Leaf />
-                                Agricultural Guidance
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex flex-col items-start justify-center text-left">
-                            <p className="mb-4 text-muted-foreground">Get AI-powered advice on what to plant based on the weather forecast.</p>
-                            <Button asChild>
-                                <Link href="/agriculture">
-                                    View Agricultural Info
-                                </Link>
-                            </Button>
-                        </CardContent>
-                    </Card>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="animate-in fade-in-0 duration-1000">
+                       <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-primary">
+                                    <Leaf />
+                                    Agricultural Guidance
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex flex-col items-start justify-center text-left">
+                                <p className="mb-4 text-muted-foreground">Get AI-powered advice on what to plant based on the weather forecast.</p>
+                                <Button asChild>
+                                    <Link href="/agriculture">
+                                        View Agricultural Info
+                                    </Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
+                     <div className="animate-in fade-in-0 duration-1000">
+                        <Card className="border-destructive/50">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-destructive">
+                                    <Siren />
+                                    Emergency Assistance
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex flex-col items-start justify-center text-left h-full">
+                                <p className="mb-4 text-muted-foreground">Get safety tips and emergency contact numbers for severe weather situations.</p>
+                                <Button asChild variant="destructive">
+                                    <Link href="/emergency">
+                                        Get Help Now
+                                    </Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
             </div>
         </div>
