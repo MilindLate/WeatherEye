@@ -9,6 +9,7 @@ import DailyForecast from './daily-forecast';
 import AiSummary from './ai-summary';
 import WeatherAlerts from './weather-alerts';
 import { Skeleton } from './ui/skeleton';
+import AirQuality from './air-quality';
 
 function LoadingSkeleton() {
     return (
@@ -86,8 +87,13 @@ export default function WeatherApp() {
                     <CurrentWeather data={weatherData.current} />
                 </div>
                 
-                <div className="animate-in fade-in-0 duration-700">
-                    <AiSummary todayForecast={todayForecast} />
+                <div className="grid md:grid-cols-2 gap-6">
+                    <div className="animate-in fade-in-0 duration-700">
+                        <AiSummary todayForecast={todayForecast} airQuality={weatherData.current.airQuality} />
+                    </div>
+                    <div className="animate-in fade-in-0 duration-700">
+                        <AirQuality data={weatherData.current.airQuality} />
+                    </div>
                 </div>
 
                 <div className="animate-in fade-in-0 duration-900">

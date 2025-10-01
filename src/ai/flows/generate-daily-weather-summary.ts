@@ -17,6 +17,7 @@ const GenerateDailyWeatherSummaryInputSchema = z.object({
   condition: z.string().describe('A general description of the weather conditions for the day (e.g., sunny, cloudy, rainy).'),
   precipitationProbability: z.number().describe('The probability of precipitation for the day (0-1).'),
   windSpeed: z.number().describe('The wind speed for the day in km/h.'),
+  airQualityIndex: z.number().describe('The Air Quality Index (AQI) for the day.'),
 });
 export type GenerateDailyWeatherSummaryInput = z.infer<typeof GenerateDailyWeatherSummaryInputSchema>;
 
@@ -35,13 +36,17 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateDailyWeatherSummaryOutputSchema},
   prompt: `You are a helpful assistant that summarizes weather forecasts.
 
-  Given the following weather data, generate a concise summary of the daily weather forecast, highlighting key factors like the need for an umbrella or potential hazards.  The summary should be no more than two sentences.
+  Given the following weather data, generate a concise summary of the daily weather forecast and air quality. The summary should be no more than three sentences.
+  
+  - Start with the weather, mentioning temperature, conditions, and if an umbrella is needed.
+  - Then, comment on the air quality based on the AQI. An AQI of 0-50 is good, 51-100 is moderate, and above 100 is unhealthy.
 
   Temperature High: {{{temperatureHigh}}}°C
   Temperature Low: {{{temperatureLow}}}°C
   Condition: {{{condition}}}
   Precipitation Probability: {{{precipitationProbability}}}
-  Wind Speed: {{{windSpeed}}} km/h`,
+  Wind Speed: {{{windSpeed}}} km/h
+  Air Quality Index: {{{airQualityIndex}}}`,
 });
 
 const generateDailyWeatherSummaryFlow = ai.defineFlow(

@@ -11,12 +11,23 @@ export type WeatherCondition =
   | 'Fog'
   | 'Windy';
 
+export interface AirQuality {
+    aqi: number;
+    pm25: number;
+    pm10: number;
+    so2: number;
+    no2: number;
+    o3: number;
+    co: number;
+}
+
 export interface CurrentWeather {
   locationName: string;
   temp: number;
   condition: WeatherCondition;
   humidity: number;
   wind: number;
+  airQuality: AirQuality;
 }
 
 export interface HourlyForecast {
@@ -54,6 +65,11 @@ const conditions: WeatherCondition[] = [
 
 const getRandomElement = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const getRandomInt = (min: number, max: number): number => Math.floor(Math.random() * (max - min + 1)) + min;
+const getRandomFloat = (min: number, max: number, decimals: number): number => {
+    const str = (Math.random() * (max - min) + min).toFixed(decimals);
+    return parseFloat(str);
+}
+
 
 export const getMockWeatherData = (lat: number, lon: number): WeatherData => {
   const now = new Date();
@@ -66,6 +82,15 @@ export const getMockWeatherData = (lat: number, lon: number): WeatherData => {
     condition: currentCondition,
     humidity: getRandomInt(30, 90),
     wind: getRandomInt(0, 30),
+    airQuality: {
+        aqi: getRandomInt(10, 200),
+        pm25: getRandomFloat(5, 50, 1),
+        pm10: getRandomFloat(10, 100, 1),
+        so2: getRandomFloat(1, 20, 1),
+        no2: getRandomFloat(5, 40, 1),
+        o3: getRandomFloat(20, 100, 1),
+        co: getRandomFloat(0.1, 2, 1),
+    }
   };
 
   const hourly: HourlyForecast[] = Array.from({ length: 24 }, (_, i) => {
