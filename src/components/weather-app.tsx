@@ -12,7 +12,7 @@ import { Skeleton } from './ui/skeleton';
 import AirQuality from './air-quality';
 import { Button } from './ui/button';
 import Link from 'next/link';
-import { Leaf } from 'lucide-react';
+import { Leaf, ShieldAlert } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 function LoadingSkeleton() {
@@ -112,24 +112,43 @@ export default function WeatherApp() {
                     <div className="animate-in fade-in-0 duration-1000">
                         <WeatherAlerts currentData={weatherData.current} />
                     </div>
-                    <div className="animate-in fade-in-0 duration-1000 flex flex-col">
-                        <Card className="flex-grow">
+                     <div className="animate-in fade-in-0 duration-1000">
+                        <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-primary">
-                                    <Leaf />
-                                    Agricultural Guidance
+                                    <ShieldAlert />
+                                    Global Red Alerts
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="flex flex-col items-center justify-center text-center h-full">
-                                <p className="mb-4 text-muted-foreground">Get AI-powered advice on what to plant based on the weather forecast.</p>
+                                <p className="mb-4 text-muted-foreground">View severe weather warnings from around the world.</p>
                                 <Button asChild>
-                                    <Link href="/agriculture">
-                                        View Agricultural Info
+                                    <Link href="/alerts">
+                                        View Global Alerts
                                     </Link>
                                 </Button>
                             </CardContent>
                         </Card>
                     </div>
+                </div>
+
+                 <div className="animate-in fade-in-0 duration-1000">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-primary">
+                                <Leaf />
+                                Agricultural Guidance
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-col items-center justify-center text-center">
+                            <p className="mb-4 text-muted-foreground">Get AI-powered advice on what to plant based on the weather forecast.</p>
+                            <Button asChild>
+                                <Link href="/agriculture">
+                                    View Agricultural Info
+                                </Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </div>
