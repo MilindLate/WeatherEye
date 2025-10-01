@@ -120,7 +120,7 @@ export default function WeatherApp() {
                                     Global Red Alerts
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="flex flex-col items-center justify-center text-center h-full">
+                            <CardContent className="flex flex-col items-start justify-center text-left h-full">
                                 <p className="mb-4 text-muted-foreground">View severe weather warnings from around the world.</p>
                                 <Button asChild>
                                     <Link href="/alerts">
@@ -140,7 +140,7 @@ export default function WeatherApp() {
                                 Agricultural Guidance
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="flex flex-col items-center justify-center text-center">
+                        <CardContent className="flex flex-col items-start justify-center text-left">
                             <p className="mb-4 text-muted-foreground">Get AI-powered advice on what to plant based on the weather forecast.</p>
                             <Button asChild>
                                 <Link href="/agriculture">

@@ -18,16 +18,14 @@ export default function LoginPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would handle authentication here.
-    // For now, we'll just redirect to the location selection page.
     router.push('/location');
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <Card className="mx-auto max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
+    <div className="flex items-center justify-center min-h-screen bg-background p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center">
+           <CardTitle className="text-3xl font-bold text-primary font-headline">WeatherEye</CardTitle>
           <CardDescription>
             Enter your email below to login to your account
           </CardDescription>
@@ -46,13 +44,13 @@ export default function LoginPage() {
             <div className="grid gap-2">
               <div className="flex items-center">
                 <Label htmlFor="password">Password</Label>
-                <Link href="#" className="ml-auto inline-block text-sm underline">
+                <Link href="#" className="ml-auto inline-block text-sm text-primary/80 hover:text-primary underline">
                   Forgot your password?
                 </Link>
               </div>
               <Input id="password" type="password" required />
             </div>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" size="lg">
               Login
             </Button>
             <Button variant="outline" className="w-full" onClick={handleLogin}>
@@ -61,7 +59,7 @@ export default function LoginPage() {
           </form>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{" "}
-            <Link href="#" className="underline">
+            <Link href="#" className="underline text-primary/80 hover:text-primary">
               Sign up
             </Link>
           </div>
