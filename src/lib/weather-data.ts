@@ -1,6 +1,8 @@
 import { format, fromUnixTime } from 'date-fns';
 
-export type WeatherCondition =
+// This is now used only for icon mapping.
+// The actual condition text will come directly from the API.
+export type WeatherIconType =
   | 'Sunny'
   | 'Partly Cloudy'
   | 'Cloudy'
@@ -24,7 +26,8 @@ export interface AirQuality {
 export interface CurrentWeather {
   locationName: string;
   temp: number;
-  condition: WeatherCondition;
+  condition: string; // Will hold the raw description e.g., "broken clouds"
+  icon: WeatherIconType; // Will hold the mapped icon type
   humidity: number;
   wind: number;
   airQuality: AirQuality;
@@ -34,13 +37,15 @@ export interface HourlyForecast {
   time: string;
   temp: number;
   precipitation: number;
-  condition: WeatherCondition;
+  condition: string;
+  icon: WeatherIconType;
 }
 
 export interface DailyForecast {
   day: string;
   temp: { min: number; max: number };
-  condition: WeatherCondition;
+  condition: string;
+  icon: WeatherIconType;
   precipitation: number;
   wind: number;
 }
@@ -51,8 +56,7 @@ export interface WeatherData {
   daily: DailyForecast[];
 }
 
-// OWM returns a code, we map it to our WeatherCondition
-const mapOwmIconToCondition = (icon: string): WeatherCondition => {
+const mapOwmIconToIconType = (icon: string): WeatherIconType => {
   switch (icon.substring(0, 2)) {
     case '01': return 'Sunny';
     case '02': return 'Partly Cloudy';
@@ -67,12 +71,14 @@ const mapOwmIconToCondition = (icon: string): WeatherCondition => {
   }
 };
 
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export const transformWeatherData = (weather: any, forecast: any, air: any): WeatherData => {
     const current: CurrentWeather = {
         locationName: weather.name,
         temp: Math.round(weather.main.temp),
-        condition: weather.weather[0] ? mapOwmIconToCondition(weather.weather[0].icon) : 'Sunny',
+        condition: weather.weather[0] ? capitalize(weather.weather[0].description) : 'Clear',
+        icon: weather.weather[0] ? mapOwmIconToIconType(weather.weather[0].icon) : 'Sunny',
         humidity: weather.main.humidity,
         wind: Math.round(weather.wind.speed * 3.6), // m/s to km/h
         airQuality: {
@@ -90,7 +96,8 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
         time: format(fromUnixTime(item.dt), 'HH:00'),
         temp: Math.round(item.main.temp),
         precipitation: item.pop * 100,
-        condition: item.weather[0] ? mapOwmIconToCondition(item.weather[0].icon) : 'Sunny',
+        condition: item.weather[0] ? capitalize(item.weather[0].description) : 'Clear',
+        icon: item.weather[0] ? mapOwmIconToIconType(item.weather[0].icon) : 'Sunny',
     }));
 
 
@@ -102,7 +109,8 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
             dailyForecasts[day] = {
                 day: day,
                 temp: { min: item.main.temp, max: item.main.temp },
-                condition: item.weather[0] ? mapOwmIconToCondition(item.weather[0].icon) : 'Sunny',
+                condition: item.weather[0] ? capitalize(item.weather[0].description) : 'Clear',
+                icon: item.weather[0] ? mapOwmIconToIconType(item.weather[0].icon) : 'Sunny',
                 precipitation: item.pop,
                 wind: item.wind.speed
             };
@@ -110,7 +118,8 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
             dailyForecasts[day].temp.min = Math.min(dailyForecasts[day].temp.min, item.main.temp);
             dailyForecasts[day].temp.max = Math.max(dailyForecasts[day].temp.max, item.main.temp);
             if (item.dt_txt.includes("12:00:00")) {
-                 dailyForecasts[day].condition = item.weather[0] ? mapOwmIconToCondition(item.weather[0].icon) : 'Sunny';
+                 dailyForecasts[day].condition = item.weather[0] ? capitalize(item.weather[0].description) : 'Clear';
+                 dailyForecasts[day].icon = item.weather[0] ? mapOwmIconToIconType(item.weather[0].icon) : 'Sunny';
             }
             dailyForecasts[day].precipitation = Math.max(dailyForecasts[day].precipitation, item.pop);
             dailyForecasts[day].wind = Math.max(dailyForecasts[day].wind, item.wind.speed);
@@ -118,8 +127,9 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
     });
 
     const daily = Object.values(dailyForecasts).slice(0, 7);
-    daily[0].day = "Today";
-
+    if (daily.length > 0) {
+      daily[0].day = "Today";
+    }
 
     return { current, hourly, daily };
 };
@@ -127,7 +137,7 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
 export const getMockWeatherData = (lat: number, lon: number): WeatherData => {
   const now = new Date();
   
-  const conditions: WeatherCondition[] = [
+  const conditions: WeatherIconType[] = [
     'Sunny', 'Partly Cloudy', 'Cloudy', 'Rainy', 'Heavy Rain', 'Thunderstorm', 'Snow', 'Fog', 'Windy',
   ];
   const getRandomElement = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
@@ -137,12 +147,13 @@ export const getMockWeatherData = (lat: number, lon: number): WeatherData => {
     return parseFloat(str);
   }
 
-  const currentCondition = getRandomElement(conditions);
+  const currentIcon = getRandomElement(conditions);
 
   const current: CurrentWeather = {
     locationName: `City (${lat.toFixed(2)}, ${lon.toFixed(2)})`,
     temp: getRandomInt(-5, 35),
-    condition: currentCondition,
+    condition: currentIcon,
+    icon: currentIcon,
     humidity: getRandomInt(30, 90),
     wind: getRandomInt(0, 30),
     airQuality: {
@@ -159,25 +170,28 @@ export const getMockWeatherData = (lat: number, lon: number): WeatherData => {
   const hourly: HourlyForecast[] = Array.from({ length: 24 }, (_, i) => {
     const hour = new Date(now);
     hour.setHours(now.getHours() + i);
+    const icon = getRandomElement(conditions);
     return {
       time: format(hour, 'HH:00'),
       temp: current.temp + Math.round(Math.sin((i / 24) * Math.PI * 2) * 5) + getRandomInt(-1, 1),
-      precipitation: ['Rainy', 'Heavy Rain', 'Thunderstorm', 'Snow'].includes(getRandomElement(conditions)) ? Math.random() : 0,
-      condition: getRandomElement(conditions),
+      precipitation: ['Rainy', 'Heavy Rain', 'Thunderstorm', 'Snow'].includes(icon) ? Math.random() : 0,
+      condition: icon,
+      icon: icon,
     };
   });
 
   const daily: DailyForecast[] = Array.from({ length: 7 }, (_, i) => {
     const day = new Date(now);
     day.setDate(now.getDate() + i);
-    const dayCondition = getRandomElement(conditions);
+    const dayIcon = getRandomElement(conditions);
     const maxTemp = current.temp + getRandomInt(2, 6);
     const minTemp = maxTemp - getRandomInt(5, 10);
     return {
       day: i === 0 ? 'Today' : format(day, 'EEE'),
       temp: { min: minTemp, max: maxTemp },
-      condition: dayCondition,
-      precipitation: ['Rainy', 'Heavy Rain', 'Thunderstorm', 'Snow'].includes(dayCondition) ? parseFloat(Math.random().toFixed(2)) : 0,
+      condition: dayIcon,
+      icon: dayIcon,
+      precipitation: ['Rainy', 'Heavy Rain', 'Thunderstorm', 'Snow'].includes(dayIcon) ? parseFloat(Math.random().toFixed(2)) : 0,
       wind: getRandomInt(5, 40),
     };
   });

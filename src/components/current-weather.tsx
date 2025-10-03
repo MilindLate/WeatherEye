@@ -21,7 +21,7 @@ export default function CurrentWeather({ data }: CurrentWeatherProps) {
       <CardContent>
         <div className="flex flex-col sm:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-4">
-            <WeatherIcon condition={data.condition} className="w-24 h-24 text-primary" />
+            <WeatherIcon icon={data.icon} className="w-24 h-24 text-primary" />
             <div>
               <p className="text-6xl sm:text-7xl font-bold text-white">{Math.round(data.temp)}°</p>
               <p className="text-xl text-foreground/80 capitalize">{data.condition}</p>

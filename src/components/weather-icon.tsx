@@ -1,6 +1,6 @@
 'use client';
 
-import type { WeatherCondition } from '@/lib/weather-data';
+import type { WeatherIconType } from '@/lib/weather-data';
 import {
   Sun,
   CloudSun,
@@ -15,10 +15,10 @@ import {
 } from 'lucide-react';
 
 interface WeatherIconProps extends LucideProps {
-  condition: WeatherCondition;
+  icon: WeatherIconType;
 }
 
-const iconMap: Record<WeatherCondition, React.ElementType> = {
+const iconMap: Record<WeatherIconType, React.ElementType> = {
   Sunny: Sun,
   'Partly Cloudy': CloudSun,
   Cloudy: Cloud,
@@ -30,7 +30,7 @@ const iconMap: Record<WeatherCondition, React.ElementType> = {
   Windy: Wind,
 };
 
-export default function WeatherIcon({ condition, ...props }: WeatherIconProps) {
-  const IconComponent = iconMap[condition] || Sun;
+export default function WeatherIcon({ icon, ...props }: WeatherIconProps) {
+  const IconComponent = iconMap[icon] || Sun;
   return <IconComponent {...props} />;
 }
