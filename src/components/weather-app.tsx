@@ -1,70 +1,74 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import type { WeatherData } from '@/lib/weather-data';
-import { getMockWeatherData } from '@/lib/weather-data';
 import CurrentWeather from './current-weather';
 import HourlyForecast from './hourly-forecast';
 import DailyForecast from './daily-forecast';
 import AiSummary from './ai-summary';
 import WeatherAlerts from './weather-alerts';
-import { Skeleton } from './ui/skeleton';
 import AirQuality from './air-quality';
 import { Button } from './ui/button';
 import Link from 'next/link';
 import { Leaf, ShieldAlert, Siren } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-
-function LoadingSkeleton() {
-    return (
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-            <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-64 w-full" />
-            <Skeleton className="h-80 w-full" />
-        </div>
-    )
-}
+import { getRealtimeWeatherData } from '@/app/actions';
 
 export default function WeatherApp() {
     const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isPending, startTransition] = useTransition();
 
     useEffect(() => {
+        setLoading(true);
         if ('geolocation' in navigator) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const { latitude, longitude } = position.coords;
-                    const data = getMockWeatherData(latitude, longitude);
-                    setWeatherData(data);
-                    setError(null);
-                    setLoading(false);
+                    startTransition(async () => {
+                        const data = await getRealtimeWeatherData(latitude, longitude);
+                        if (data) {
+                            setWeatherData(data);
+                            setError(null);
+                        } else {
+                            setError("Could not fetch weather data. Please try again later.");
+                        }
+                        setLoading(false);
+                    });
                 },
                 (err) => {
-                    setError(`Error getting location: ${err.message}. Using a default location.`);
-                    const defaultLat = 51.5072; // London
-                    const defaultLon = -0.1276;
-                    const data = getMockWeatherData(defaultLat, defaultLon);
-                    setWeatherData(data);
-                    setLoading(false);
+                     startTransition(async () => {
+                        setError(`Error getting location: ${err.message}. Using a default location.`);
+                        const defaultLat = 51.5072; // London
+                        const defaultLon = -0.1276;
+                        const data = await getRealtimeWeatherData(defaultLat, defaultLon);
+                        if (data) {
+                            setWeatherData(data);
+                        }
+                        setLoading(false);
+                     });
                 }
             );
         } else {
-            setError("Geolocation is not supported by your browser. Using a default location.");
-            const defaultLat = 51.5072; // London
-            const defaultLon = -0.1276;
-            const data = getMockWeatherData(defaultLat, defaultLon);
-            setWeatherData(data);
-            setLoading(false);
+            startTransition(async () => {
+                setError("Geolocation is not supported by your browser. Using a default location.");
+                const defaultLat = 51.5072; // London
+                const defaultLon = -0.1276;
+                const data = await getRealtimeWeatherData(defaultLat, defaultLon);
+                 if (data) {
+                    setWeatherData(data);
+                }
+                setLoading(false);
+            });
         }
     }, []);
 
-    if (loading) {
+    if (loading || isPending) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-4">
                 <h1 className="text-4xl font-bold text-primary mb-2 animate-pulse">WeatherEye</h1>
-                <p className="text-muted-foreground animate-pulse">Detecting your location and fetching the forecast...</p>
+                <p className="text-muted-foreground animate-pulse">Fetching the latest forecast for your location...</p>
             </div>
         );
     }
