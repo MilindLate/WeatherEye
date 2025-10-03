@@ -11,6 +11,7 @@ export default function LocationPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [city, setCity] = useState('');
 
     const handleUseCurrentLocation = () => {
         setLoading(true);
@@ -18,8 +19,7 @@ export default function LocationPage() {
         if ('geolocation' in navigator) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    // In a real app, you would save the location preference.
-                    // For now, we just redirect.
+                    localStorage.removeItem('weather_location');
                     router.push('/dashboard');
                 },
                 (err) => {
@@ -35,9 +35,12 @@ export default function LocationPage() {
     
     const handleLocationSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        // In a real app, you'd use a geocoding API.
-        // For now, we'll just redirect to the dashboard.
-        router.push('/dashboard');
+        if (city.trim()) {
+            localStorage.setItem('weather_location', city.trim());
+            router.push('/dashboard');
+        } else {
+            setError('Please enter a city name.');
+        }
     }
 
     return (
@@ -57,7 +60,6 @@ export default function LocationPage() {
                         <LocateFixed className="mr-2" />
                         {loading ? 'Getting Location...' : 'Use Current Location'}
                     </Button>
-                    {error && <p className="text-sm text-center text-destructive">{error}</p>}
                     
                     <div className="flex items-center space-x-2">
                         <div className="flex-1 h-px bg-border" />
@@ -71,12 +73,15 @@ export default function LocationPage() {
                                 id="location-search"
                                 type="text"
                                 placeholder="Search for a city..."
+                                value={city}
+                                onChange={(e) => setCity(e.target.value)}
                             />
                         </div>
                         <Button type="submit" className="w-full">
                             Search Location
                         </Button>
                     </form>
+                    {error && <p className="text-sm text-center text-destructive mt-4">{error}</p>}
                 </CardContent>
             </Card>
         </div>
