@@ -6,7 +6,6 @@ import CurrentWeather from './current-weather';
 import HourlyForecast from './hourly-forecast';
 import DailyForecast from './daily-forecast';
 import AiSummary from './ai-summary';
-import WeatherAlerts from './weather-alerts';
 import AirQuality from './air-quality';
 import { Button } from './ui/button';
 import Link from 'next/link';
@@ -125,7 +124,22 @@ export default function WeatherApp() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="animate-in fade-in-0 duration-1000">
-                        <WeatherAlerts currentData={weatherData.current} dailyData={weatherData.daily} />
+                       <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-primary">
+                                    <Leaf />
+                                    Agricultural Guidance
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex flex-col items-start justify-center text-left">
+                                <p className="mb-4 text-muted-foreground">Get AI-powered advice on what to plant based on the weather forecast.</p>
+                                <Button asChild>
+                                    <Link href="/agriculture">
+                                        View Agricultural Info
+                                    </Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
                     </div>
                      <div className="animate-in fade-in-0 duration-1000">
                         <Card>
@@ -148,25 +162,7 @@ export default function WeatherApp() {
                 </div>
 
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="animate-in fade-in-0 duration-1000">
-                       <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-primary">
-                                    <Leaf />
-                                    Agricultural Guidance
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex flex-col items-start justify-center text-left">
-                                <p className="mb-4 text-muted-foreground">Get AI-powered advice on what to plant based on the weather forecast.</p>
-                                <Button asChild>
-                                    <Link href="/agriculture">
-                                        View Agricultural Info
-                                    </Link>
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    </div>
-                     <div className="animate-in fade-in-0 duration-1000">
+                    <div className="animate-in fade-in-0 duration-1000 md:col-span-2">
                         <Card className="border-destructive/50">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-destructive">
