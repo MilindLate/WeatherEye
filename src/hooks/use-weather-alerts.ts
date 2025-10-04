@@ -46,7 +46,15 @@ export function useWeatherAlerts(currentData: CurrentWeather | null) {
     });
   }, [toast]);
 
+  const hasAlert = useCallback((condition: WeatherAlert['condition'], value: number) => {
+    return alerts.some(alert => alert.condition === condition && alert.value === value);
+  }, [alerts]);
+
   const addAlert = useCallback((condition: WeatherAlert['condition'], value: number) => {
+    if (hasAlert(condition, value)) {
+        toast({ title: 'Alert already exists', variant: 'destructive' });
+        return;
+    }
     const newAlert: WeatherAlert = {
       id: new Date().toISOString(),
       condition,
@@ -57,7 +65,7 @@ export function useWeatherAlerts(currentData: CurrentWeather | null) {
     setAlerts(updatedAlerts);
     localStorage.setItem('weatherAlerts', JSON.stringify(updatedAlerts));
     toast({ title: 'Alert set!', description: newAlert.label });
-  }, [alerts, toast]);
+  }, [alerts, toast, hasAlert]);
 
   const removeAlert = useCallback((id: string) => {
     const updatedAlerts = alerts.filter(alert => alert.id !== id);
@@ -103,5 +111,5 @@ export function useWeatherAlerts(currentData: CurrentWeather | null) {
 
   }, [permission, currentData, alerts]);
 
-  return { alerts, permission, requestPermission, addAlert, removeAlert };
+  return { alerts, permission, requestPermission, addAlert, removeAlert, hasAlert };
 }

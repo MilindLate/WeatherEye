@@ -125,7 +125,7 @@ export default function WeatherApp() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="animate-in fade-in-0 duration-1000">
-                        <WeatherAlerts currentData={weatherData.current} />
+                        <WeatherAlerts currentData={weatherData.current} dailyData={weatherData.daily} />
                     </div>
                      <div className="animate-in fade-in-0 duration-1000">
                         <Card>
