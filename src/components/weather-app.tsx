@@ -9,7 +9,7 @@ import AiSummary from './ai-summary';
 import AirQuality from './air-quality';
 import { Button } from './ui/button';
 import Link from 'next/link';
-import { Leaf, ShieldAlert, Siren, MapPin, Globe } from 'lucide-react';
+import { Leaf, ShieldAlert, Siren, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { getRealtimeWeatherData } from '@/app/actions';
 import { useRouter } from 'next/navigation';
@@ -121,7 +121,7 @@ export default function WeatherApp() {
                 <div className="animate-in fade-in-0 duration-1000">
                     <DailyForecast data={weatherData.daily} />
                 </div>
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="animate-in fade-in-0 duration-1000">
                        <Card>
                             <CardHeader>
@@ -153,24 +153,6 @@ export default function WeatherApp() {
                                 <Button asChild size="sm">
                                     <Link href="/alerts">
                                         View Global Alerts
-                                    </Link>
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    </div>
-                    <div className="animate-in fade-in-0 duration-1000">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-primary">
-                                    <Globe />
-                                    Air Quality Map
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex flex-col items-start justify-center text-left h-full">
-                                <p className="mb-4 text-muted-foreground text-sm">Explore a world map of real-time air quality data.</p>
-                                <Button asChild size="sm">
-                                    <Link href="/map">
-                                        View World Map
                                     </Link>
                                 </Button>
                             </CardContent>
