@@ -7,9 +7,22 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // For this prototype, we'll just redirect to the login page.
-    // In a real app, you'd check for an existing session.
-    router.replace('/login');
+    // On first load, check if there's a location saved from a previous session
+    const city = localStorage.getItem('weather_location_city');
+    const coordsRaw = localStorage.getItem('weather_location_coords');
+
+    if (city) {
+      router.replace(`/dashboard?city=${city}`);
+    } else if (coordsRaw) {
+      try {
+        const coords = JSON.parse(coordsRaw);
+        router.replace(`/dashboard?lat=${coords.lat}&lon=${coords.lon}`);
+      } catch (e) {
+         router.replace('/location');
+      }
+    } else {
+      router.replace('/login');
+    }
   }, [router]);
 
   return (

@@ -14,7 +14,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription } from './ui/card';
 
-
 function NavCard({ href, icon, title, description }: { href: string, icon: React.ReactNode, title: string, description: string }) {
     return (
          <Link href={href} className="block transition-transform hover:scale-[1.02]">
@@ -33,8 +32,11 @@ function NavCard({ href, icon, title, description }: { href: string, icon: React
     )
 }
 
+interface WeatherAppProps {
+    location: { lat: number, lon: number } | { city: string } | null;
+}
 
-export default function WeatherApp() {
+export default function WeatherApp({ location }: WeatherAppProps) {
     const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -42,39 +44,29 @@ export default function WeatherApp() {
 
     useEffect(() => {
         const fetchWeather = async () => {
+            if (!location) {
+                // If no location is provided in URL, redirect to location selection
+                router.push('/location');
+                return;
+            }
+
             setLoading(true);
-            const savedLocation = localStorage.getItem('weather_location');
             
-            let data: WeatherData | null = null;
-
             try {
-                if (savedLocation) {
-                    data = await getRealtimeWeatherData({ city: savedLocation });
-                    if (!data) {
-                        setError(`Could not fetch weather data for ${savedLocation}. Try another location.`);
-                        localStorage.removeItem('weather_location'); // Clear invalid location
-                    }
-                } else if ('geolocation' in navigator) {
-                    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-                        navigator.geolocation.getCurrentPosition(resolve, reject);
-                    });
-                    const { latitude, longitude } = position.coords;
-                    data = await getRealtimeWeatherData({ lat: latitude, lon: longitude });
-                    if (!data) {
-                        setError("Could not fetch weather data for your location.");
-                    }
-                } else {
-                    setError("Geolocation is not supported. Please select a location manually.");
-                    router.push('/location');
-                    return;
-                }
-
+                const data = await getRealtimeWeatherData(location);
+                
                 if (data) {
                     setWeatherData(data);
                     setError(null);
-                } else if (!savedLocation) {
-                     router.push('/location');
-                     return;
+                    if ('city' in location) {
+                         localStorage.setItem('weather_location_city', location.city);
+                         localStorage.removeItem('weather_location_coords');
+                    } else {
+                        localStorage.setItem('weather_location_coords', JSON.stringify({lat: location.lat, lon: location.lon}));
+                        localStorage.removeItem('weather_location_city');
+                    }
+                } else {
+                    setError(`Could not fetch weather data. Try another location.`);
                 }
             } catch (err: any) {
                 console.error("Weather fetch error:", err);
@@ -85,13 +77,13 @@ export default function WeatherApp() {
         };
 
         fetchWeather();
-    }, [router]);
+    }, [location, router]);
 
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-4">
                 <h1 className="text-4xl font-bold text-primary mb-2 animate-pulse">WeatherEye</h1>
-                <p className="text-muted-foreground animate-pulse">Fetching the latest forecast for your location...</p>
+                <p className="text-muted-foreground animate-pulse">Fetching the latest forecast...</p>
             </div>
         );
     }

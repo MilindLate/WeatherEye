@@ -19,8 +19,8 @@ export default function LocationPage() {
         if ('geolocation' in navigator) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    localStorage.removeItem('weather_location');
-                    router.push('/dashboard');
+                    const { latitude, longitude } = position.coords;
+                    router.push(`/dashboard?lat=${latitude}&lon=${longitude}`);
                 },
                 (err) => {
                     setError('Could not get your location. Please try again or search manually.');
@@ -36,8 +36,7 @@ export default function LocationPage() {
     const handleLocationSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (city.trim()) {
-            localStorage.setItem('weather_location', city.trim());
-            router.push('/dashboard');
+            router.push(`/dashboard?city=${encodeURIComponent(city.trim())}`);
         } else {
             setError('Please enter a city name.');
         }
