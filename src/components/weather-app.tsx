@@ -65,7 +65,7 @@ export default function WeatherApp() {
                 setLoading(false);
             });
         }
-    }, []);
+    }, [router]);
 
     if (loading || isPending) {
         return (
@@ -168,13 +168,13 @@ export default function WeatherApp() {
                                     <Siren />
                                     Emergency Assistance
                                 </CardTitle>
-                            </CardHeader>
+                            </Header>
                             <CardContent className="flex flex-col items-start justify-center text-left h-full">
                                 <p className="mb-4 text-muted-foreground">Get safety tips and emergency contact numbers for severe weather situations.</p>
                                 <Button asChild variant="destructive">
                                     <Link href="/emergency">
                                         Get Help Now
-                                    </Link>
+                                    </A>
                                 </Button>
                             </CardContent>
                         </Card>
