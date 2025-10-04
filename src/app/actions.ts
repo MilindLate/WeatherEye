@@ -3,8 +3,7 @@
 import { generateDailyWeatherSummary, type GenerateDailyWeatherSummaryInput } from '@/ai/flows/generate-daily-weather-summary';
 import { generateAgriculturalAdvice, type GenerateAgriculturalAdviceInput, type GenerateAgriculturalAdviceOutput } from '@/ai/flows/generate-agricultural-advice';
 import { generateGlobalAlerts, type GenerateGlobalAlertsOutput } from '@/ai/flows/generate-global-alerts';
-import { transformWeatherData, type WeatherData, type DailyForecast } from '@/lib/weather-data';
-import { generateAlertSuggestions, type GenerateAlertSuggestionsOutput } from '@/ai/flows/generate-alert-suggestions';
+import { transformWeatherData, type WeatherData } from '@/lib/weather-data';
 
 async function fetchFromOWM(url: string) {
     const OWM_API_KEY = process.env.NEXT_PUBLIC_OWM_API_KEY;
@@ -47,19 +46,6 @@ export async function getGlobalAlerts(): Promise<GenerateGlobalAlertsOutput | nu
         return null;
     }
 }
-
-export async function getAlertSuggestions(dailyForecasts: DailyForecast[]): Promise<GenerateAlertSuggestionsOutput | null> {
-    try {
-        const forecastStrings = dailyForecasts.map(f => 
-            `${f.day}: High ${f.temp.max}°C, Low ${f.temp.min}°C, ${f.condition}, Wind ${Math.round(f.wind * 3.6)} km/h`
-        );
-        return await generateAlertSuggestions({ forecast: forecastStrings });
-    } catch (error) {
-        console.error("Alert suggestions generation failed:", error);
-        return null;
-    }
-}
-
 
 async function getWeatherDataByCoords(lat: number, lon: number): Promise<WeatherData | null> {
     const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}`;
