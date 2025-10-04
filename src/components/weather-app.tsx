@@ -22,49 +22,52 @@ export default function WeatherApp() {
     const router = useRouter();
 
     useEffect(() => {
-        setLoading(true);
-        const savedLocation = localStorage.getItem('weather_location');
-        
-        if (savedLocation) {
-             startTransition(async () => {
-                const data = await getRealtimeWeatherData({ city: savedLocation });
-                if (data) {
-                    setWeatherData(data);
-                    setError(null);
-                } else {
-                    setError(`Could not fetch weather data for ${savedLocation}. Try another location.`);
-                    localStorage.removeItem('weather_location'); // Clear invalid location
-                }
-                setLoading(false);
-            });
-        } else if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-                    startTransition(async () => {
-                        const data = await getRealtimeWeatherData({ lat: latitude, lon: longitude });
-                        if (data) {
-                            setWeatherData(data);
-                            setError(null);
-                        } else {
-                            setError("Could not fetch weather data for your location.");
-                        }
-                        setLoading(false);
-                    });
-                },
-                (err) => {
-                     startTransition(async () => {
-                        setError(`Error getting location: ${err.message}. Please select a location manually.`);
-                        setLoading(false);
-                     });
-                }
-            );
-        } else {
-            startTransition(() => {
-                setError("Geolocation is not supported. Please select a location manually.");
-                setLoading(false);
-            });
-        }
+        const fetchWeather = () => {
+            setLoading(true);
+            const savedLocation = localStorage.getItem('weather_location');
+            
+            if (savedLocation) {
+                 startTransition(async () => {
+                    const data = await getRealtimeWeatherData({ city: savedLocation });
+                    if (data) {
+                        setWeatherData(data);
+                        setError(null);
+                    } else {
+                        setError(`Could not fetch weather data for ${savedLocation}. Try another location.`);
+                        localStorage.removeItem('weather_location'); // Clear invalid location
+                    }
+                    setLoading(false);
+                });
+            } else if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        startTransition(async () => {
+                            const data = await getRealtimeWeatherData({ lat: latitude, lon: longitude });
+                            if (data) {
+                                setWeatherData(data);
+                                setError(null);
+                            } else {
+                                setError("Could not fetch weather data for your location.");
+                            }
+                            setLoading(false);
+                        });
+                    },
+                    (err) => {
+                         startTransition(async () => {
+                            setError(`Error getting location: ${err.message}. Please select a location manually.`);
+                            setLoading(false);
+                         });
+                    }
+                );
+            } else {
+                startTransition(() => {
+                    setError("Geolocation is not supported. Please select a location manually.");
+                    setLoading(false);
+                });
+            }
+        };
+        fetchWeather();
     }, []);
 
     if (loading || isPending) {
