@@ -18,59 +18,49 @@ export default function WeatherApp() {
     const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-    const [isPending, startTransition] = useTransition();
     const router = useRouter();
 
     useEffect(() => {
-        const fetchWeather = () => {
+        const fetchWeather = async () => {
             setLoading(true);
             const savedLocation = localStorage.getItem('weather_location');
             
-            if (savedLocation) {
-                 startTransition(async () => {
-                    const data = await getRealtimeWeatherData({ city: savedLocation });
-                    if (data) {
-                        setWeatherData(data);
-                        setError(null);
-                    } else {
+            let data: WeatherData | null = null;
+
+            try {
+                if (savedLocation) {
+                    data = await getRealtimeWeatherData({ city: savedLocation });
+                    if (!data) {
                         setError(`Could not fetch weather data for ${savedLocation}. Try another location.`);
                         localStorage.removeItem('weather_location'); // Clear invalid location
                     }
-                    setLoading(false);
-                });
-            } else if ('geolocation' in navigator) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const { latitude, longitude } = position.coords;
-                        startTransition(async () => {
-                            const data = await getRealtimeWeatherData({ lat: latitude, lon: longitude });
-                            if (data) {
-                                setWeatherData(data);
-                                setError(null);
-                            } else {
-                                setError("Could not fetch weather data for your location.");
-                            }
-                            setLoading(false);
-                        });
-                    },
-                    (err) => {
-                         startTransition(async () => {
-                            setError(`Error getting location: ${err.message}. Please select a location manually.`);
-                            setLoading(false);
-                         });
+                } else if ('geolocation' in navigator) {
+                    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject);
+                    });
+                    const { latitude, longitude } = position.coords;
+                    data = await getRealtimeWeatherData({ lat: latitude, lon: longitude });
+                    if (!data) {
+                        setError("Could not fetch weather data for your location.");
                     }
-                );
-            } else {
-                startTransition(() => {
+                } else {
                     setError("Geolocation is not supported. Please select a location manually.");
-                    setLoading(false);
-                });
+                }
+
+                if (data) {
+                    setWeatherData(data);
+                    setError(null);
+                }
+            } catch (err: any) {
+                setError(`Error: ${err.message}. Please select a location manually.`);
+            } finally {
+                setLoading(false);
             }
         };
         fetchWeather();
     }, []);
 
-    if (loading || isPending) {
+    if (loading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-4">
                 <h1 className="text-4xl font-bold text-primary mb-2 animate-pulse">WeatherEye</h1>
@@ -79,10 +69,10 @@ export default function WeatherApp() {
         );
     }
     
-    if (!weatherData) {
+    if (error || !weatherData) {
         return (
-          <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-            <p className="text-destructive text-center">{error || "Could not load weather data."}</p>
+          <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-4 text-center">
+            <p className="text-destructive">{error || "Could not load weather data."}</p>
             <Button onClick={() => router.push('/location')}>
                 <MapPin className="mr-2" />
                 Select a Location
