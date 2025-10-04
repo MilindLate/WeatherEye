@@ -3,7 +3,7 @@
 import type { CurrentWeather as CurrentWeatherType } from '@/lib/weather-data';
 import WeatherIcon from './weather-icon';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Droplets, Thermometer, Wind as WindIcon, MapPin } from 'lucide-react';
+import { Droplets, Thermometer, Wind as WindIcon, MapPin, Gauge } from 'lucide-react';
 
 interface CurrentWeatherProps {
   data: CurrentWeatherType;
@@ -19,29 +19,38 @@ export default function CurrentWeather({ data }: CurrentWeatherProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <WeatherIcon icon={data.icon} className="w-24 h-24 text-primary" />
             <div>
               <p className="text-6xl sm:text-7xl font-bold text-white">{Math.round(data.temp)}°</p>
-              <p className="text-xl text-foreground/80 capitalize">{data.condition}</p>
+              <p className="text-lg text-foreground/80">{data.condition}</p>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4 text-center w-full sm:w-auto">
-            <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-background/50">
-              <Thermometer size={24} className="text-primary" />
-              <p className="font-bold">{Math.round(data.temp)}°C</p>
-              <p className="text-xs text-muted-foreground">Temp</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center w-full sm:w-auto">
+            <div className="flex flex-col items-center justify-center gap-1 p-2 rounded-lg bg-background/50">
+              <Thermometer size={20} className="text-primary" />
+              <p className="font-bold text-sm">{Math.round(data.feelsLike)}°C</p>
+              <p className="text-xs text-muted-foreground">Feels Like</p>
             </div>
-            <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-background/50">
-              <Droplets size={24} className="text-primary" />
-              <p className="font-bold">{data.humidity}%</p>
+             <div className="flex flex-col items-center justify-center gap-1 p-2 rounded-lg bg-background/50">
+                <p className="font-bold text-sm">{Math.round(data.tempMax)}°/{Math.round(data.tempMin)}°</p>
+                <p className="text-xs text-muted-foreground">Max / Min</p>
+            </div>
+            <div className="flex flex-col items-center justify-center gap-1 p-2 rounded-lg bg-background/50">
+              <Droplets size={20} className="text-primary" />
+              <p className="font-bold text-sm">{data.humidity}%</p>
               <p className="text-xs text-muted-foreground">Humidity</p>
             </div>
-            <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-background/50">
-              <WindIcon size={24} className="text-primary" />
-              <p className="font-bold">{data.wind} km/h</p>
+            <div className="flex flex-col items-center justify-center gap-1 p-2 rounded-lg bg-background/50">
+              <WindIcon size={20} className="text-primary" />
+              <p className="font-bold text-sm">{data.wind} km/h</p>
               <p className="text-xs text-muted-foreground">Wind</p>
+            </div>
+             <div className="flex flex-col items-center justify-center gap-1 p-2 rounded-lg bg-background/50">
+              <Gauge size={20} className="text-primary" />
+              <p className="font-bold text-sm">{data.pressure} hPa</p>
+              <p className="text-xs text-muted-foreground">Pressure</p>
             </div>
           </div>
         </div>

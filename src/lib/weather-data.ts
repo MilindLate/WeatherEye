@@ -25,6 +25,10 @@ export interface AirQuality {
 export interface CurrentWeather {
   locationName: string;
   temp: number;
+  feelsLike: number;
+  tempMin: number;
+  tempMax: number;
+  pressure: number;
   condition: string;
   icon: WeatherIconType;
   humidity: number;
@@ -70,8 +74,6 @@ const mapOwmIconToIconType = (icon: string): WeatherIconType => {
   }
 };
 
-const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
 const formatTimeForTimezone = (utcSeconds: number, timezoneOffset: number): string => {
     const date = fromUnixTime(utcSeconds);
     const zonedDate = toZonedTime(date, 'Etc/UTC');
@@ -86,7 +88,11 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
     const current: CurrentWeather = {
         locationName: weather.name,
         temp: Math.round(weather.main.temp),
-        condition: weather.weather[0] ? capitalize(weather.weather[0].description) : 'Clear',
+        feelsLike: Math.round(weather.main.feels_like),
+        tempMin: Math.round(weather.main.temp_min),
+        tempMax: Math.round(weather.main.temp_max),
+        pressure: weather.main.pressure,
+        condition: weather.weather[0] ? weather.weather[0].description : 'Clear',
         icon: weather.weather[0] ? mapOwmIconToIconType(weather.weather[0].icon) : 'Sunny',
         humidity: weather.main.humidity,
         wind: Math.round(weather.wind.speed * 3.6), // m/s to km/h
@@ -105,7 +111,7 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
         time: formatTimeForTimezone(item.dt, timezoneOffset),
         temp: Math.round(item.main.temp),
         precipitation: item.pop,
-        condition: item.weather[0] ? capitalize(item.weather[0].description) : 'Clear',
+        condition: item.weather[0] ? item.weather[0].description : 'Clear',
         icon: item.weather[0] ? mapOwmIconToIconType(item.weather[0].icon) : 'Sunny',
     }));
 
@@ -120,7 +126,7 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
             dailyForecasts[day] = {
                 day: day,
                 temp: { min: item.main.temp, max: item.main.temp },
-                condition: item.weather[0] ? capitalize(item.weather[0].description) : 'Clear',
+                condition: item.weather[0] ? item.weather[0].description : 'Clear',
                 icon: item.weather[0] ? mapOwmIconToIconType(item.weather[0].icon) : 'Sunny',
                 precipitation: item.pop,
                 wind: item.wind.speed
@@ -131,7 +137,7 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
             
             const itemDate = fromUnixTime(item.dt + timezoneOffset);
             if (format(itemDate, 'HH', { timeZone: 'Etc/UTC' }) === '12') {
-                 dailyForecasts[day].condition = item.weather[0] ? capitalize(item.weather[0].description) : 'Clear';
+                 dailyForecasts[day].condition = item.weather[0] ? item.weather[0].description : 'Clear';
                  dailyForecasts[day].icon = item.weather[0] ? mapOwmIconToIconType(item.weather[0].icon) : 'Sunny';
             }
             dailyForecasts[day].precipitation = Math.max(dailyForecasts[day].precipitation, item.pop);
@@ -172,6 +178,10 @@ export const getMockWeatherData = (lat: number, lon: number, city?: string): Wea
     const current: CurrentWeather = {
         locationName: city || `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`,
         temp: Math.round(randomBetween(15, 25, seed)),
+        feelsLike: Math.round(randomBetween(14, 26, seed + 9)),
+        tempMin: Math.round(randomBetween(10, 15, seed + 10)),
+        tempMax: Math.round(randomBetween(25, 30, seed + 11)),
+        pressure: Math.round(randomBetween(1000, 1020, seed + 12)),
         condition: currentCondition.condition,
         icon: currentCondition.icon,
         humidity: Math.round(randomBetween(40, 80, seed)),
