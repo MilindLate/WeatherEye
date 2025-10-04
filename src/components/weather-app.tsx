@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect } from 'react';
 import type { WeatherData } from '@/lib/weather-data';
 import CurrentWeather from './current-weather';
 import HourlyForecast from './hourly-forecast';
