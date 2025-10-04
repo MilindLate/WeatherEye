@@ -5,7 +5,7 @@ import { useState, useEffect, useTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, AlertTriangle, Thermometer, Wind, Zap, Waves, Fire, RefreshCw } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Thermometer, Wind, Zap, Waves, Flame, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getGlobalAlerts } from '../actions';
 import type { GlobalAlert } from '@/ai/flows/generate-global-alerts';
@@ -22,7 +22,7 @@ const AlertIcon = ({ type }: { type: GlobalAlert['type'] }) => {
     case 'Flooding':
         return <Waves className="w-6 h-6 text-blue-500" />;
     case 'Wildfire':
-        return <Fire className="w-6 h-6 text-orange-600" />;
+        return <Flame className="w-6 h-6 text-orange-600" />;
     case 'Tsunami Watch':
         return <Waves className="w-6 h-6 text-cyan-500" />;
     default:
