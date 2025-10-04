@@ -65,7 +65,7 @@ export default function WeatherApp() {
                 setLoading(false);
             });
         }
-    }, [router]);
+    }, []);
 
     if (loading || isPending) {
         return (
