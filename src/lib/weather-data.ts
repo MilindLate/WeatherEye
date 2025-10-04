@@ -1,8 +1,6 @@
-import { format, fromUnixTime } from 'date-fns';
+import { format, fromUnixTime, addHours, addDays } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
-// This is now used only for icon mapping.
-// The actual condition text will come directly from the API.
 export type WeatherIconType =
   | 'Sunny'
   | 'Partly Cloudy'
@@ -27,8 +25,8 @@ export interface AirQuality {
 export interface CurrentWeather {
   locationName: string;
   temp: number;
-  condition: string; // Will hold the raw description e.g., "broken clouds"
-  icon: WeatherIconType; // Will hold the mapped icon type
+  condition: string;
+  icon: WeatherIconType;
   humidity: number;
   wind: number;
   airQuality: AirQuality;
@@ -74,12 +72,10 @@ const mapOwmIconToIconType = (icon: string): WeatherIconType => {
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-// Helper to convert UTC seconds to a formatted time string in a given timezone
-// The `timezone` is the shift in seconds from UTC.
 const formatTimeForTimezone = (utcSeconds: number, timezoneOffset: number): string => {
     const date = fromUnixTime(utcSeconds);
-    const zonedDate = toZonedTime(date, 'Etc/UTC'); // Treat the date as UTC first
-    zonedDate.setSeconds(zonedDate.getSeconds() + timezoneOffset); // Apply the offset
+    const zonedDate = toZonedTime(date, 'Etc/UTC');
+    zonedDate.setSeconds(zonedDate.getSeconds() + timezoneOffset);
     return format(zonedDate, 'HH:00', { timeZone: 'Etc/UTC' });
 };
 
@@ -133,7 +129,6 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
             dailyForecasts[day].temp.min = Math.min(dailyForecasts[day].temp.min, item.main.temp);
             dailyForecasts[day].temp.max = Math.max(dailyForecasts[day].temp.max, item.main.temp);
             
-            // For daily forecast, we can still use the noon-time weather as representative
             const itemDate = fromUnixTime(item.dt + timezoneOffset);
             if (format(itemDate, 'HH', { timeZone: 'Etc/UTC' }) === '12') {
                  dailyForecasts[day].condition = item.weather[0] ? capitalize(item.weather[0].description) : 'Clear';
@@ -151,6 +146,73 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
           daily[0].day = "Today";
       }
     }
+
+    return { current, hourly, daily };
+};
+
+// Mock data generation
+const weatherConditions: {condition: string, icon: WeatherIconType}[] = [
+    { condition: 'Sunny', icon: 'Sunny' },
+    { condition: 'Partly Cloudy', icon: 'Partly Cloudy' },
+    { condition: 'Cloudy', icon: 'Cloudy' },
+    { condition: 'Light Rain', icon: 'Rainy' },
+    { condition: 'Heavy Rain', icon: 'Heavy Rain' },
+    { condition: 'Thunderstorm', icon: 'Thunderstorm' },
+    { condition: 'Light Snow', icon: 'Snow' },
+];
+
+const getRandom = (arr: any[], seed: number) => arr[Math.floor(seed) % arr.length];
+const randomBetween = (min: number, max: number, seed: number) => Math.random() * (max-min) + min;
+
+export const getMockWeatherData = (lat: number, lon: number, city?: string): WeatherData => {
+    const seed = Math.abs((lat + lon) * 1000);
+    const now = new Date();
+
+    const currentCondition = getRandom(weatherConditions, seed);
+    const current: CurrentWeather = {
+        locationName: city || `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`,
+        temp: Math.round(randomBetween(15, 25, seed)),
+        condition: currentCondition.condition,
+        icon: currentCondition.icon,
+        humidity: Math.round(randomBetween(40, 80, seed)),
+        wind: Math.round(randomBetween(5, 25, seed + 1)),
+        airQuality: {
+            aqi: Math.round(randomBetween(10, 150, seed + 2)),
+            pm25: Number(randomBetween(5, 70, seed + 3).toFixed(2)),
+            pm10: Number(randomBetween(10, 100, seed + 4).toFixed(2)),
+            so2: Number(randomBetween(1, 20, seed + 5).toFixed(2)),
+            no2: Number(randomBetween(5, 40, seed + 6).toFixed(2)),
+            o3: Number(randomBetween(20, 100, seed + 7).toFixed(2)),
+            co: Number(randomBetween(0.1, 2, seed + 8).toFixed(2)),
+        }
+    };
+
+    const hourly: HourlyForecast[] = Array.from({ length: 24 }, (_, i) => {
+        const hourSeed = seed + 10 + i;
+        const hourlyCondition = getRandom(weatherConditions, hourSeed);
+        return {
+            time: format(addHours(now, i), 'HH:00'),
+            temp: Math.round(current.temp - Math.sin(i / 3) * 3 + randomBetween(-1, 1, hourSeed)),
+            precipitation: Math.max(0, Math.min(1, randomBetween(-0.2, 0.5, hourSeed + 1))),
+            condition: hourlyCondition.condition,
+            icon: hourlyCondition.icon,
+        };
+    });
+
+    const daily: DailyForecast[] = Array.from({ length: 7 }, (_, i) => {
+        const daySeed = seed + 100 + i;
+        const dayCondition = getRandom(weatherConditions, daySeed);
+        const minTemp = Math.round(current.temp + randomBetween(-5, 0, daySeed) - (i * 0.5));
+        const maxTemp = Math.round(minTemp + randomBetween(5, 10, daySeed + 1));
+        return {
+            day: i === 0 ? 'Today' : format(addDays(now, i), 'EEE'),
+            temp: { min: minTemp, max: maxTemp },
+            condition: dayCondition.condition,
+            icon: dayCondition.icon,
+            precipitation: Math.max(0, Math.min(1, randomBetween(-0.1, 0.6, daySeed + 2))),
+            wind: Math.round(randomBetween(5, 30, daySeed + 3)),
+        };
+    });
 
     return { current, hourly, daily };
 };
