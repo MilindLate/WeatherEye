@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -15,6 +15,12 @@ const Map = dynamic(() => import('@/components/map'), {
 });
 
 export default function MapPage() {
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
     return (
         <div className="min-h-screen w-full bg-background">
             <div className="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 space-y-6">
@@ -35,7 +41,7 @@ export default function MapPage() {
 
                 <div className="h-[calc(100vh-200px)] w-full rounded-lg overflow-hidden border">
                    <Suspense fallback={<Skeleton className="h-full w-full" />}>
-                        <Map />
+                        {isClient ? <Map /> : <Skeleton className="h-full w-full" />}
                    </Suspense>
                 </div>
             </div>
