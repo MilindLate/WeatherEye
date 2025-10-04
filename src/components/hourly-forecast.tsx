@@ -16,9 +16,15 @@ const chartConfig = {
     label: 'Temp (°C)',
     color: 'hsl(var(--primary))',
   },
+  precipitation: {
+    label: 'Precipitation (%)',
+    color: 'hsl(var(--accent))',
+  }
 } satisfies ChartConfig;
 
 export default function HourlyForecast({ data }: HourlyForecastProps) {
+  const chartData = data.map(item => ({...item, precipitation: item.precipitation * 100}));
+
   return (
     <Card>
       <CardHeader>
@@ -29,7 +35,7 @@ export default function HourlyForecast({ data }: HourlyForecastProps) {
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-48 w-full">
-          <AreaChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 0 }}>
             <defs>
               <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
@@ -45,17 +51,28 @@ export default function HourlyForecast({ data }: HourlyForecastProps) {
               tickFormatter={(value) => value.slice(0, 2)}
             />
             <YAxis
+              yAxisId="left"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
               tickFormatter={(value) => `${value}°`}
               domain={['dataMin - 2', 'dataMax + 2']}
             />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={(value) => `${value}%`}
+              domain={[0, 100]}
+            />
             <Tooltip
               cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }}
               content={<ChartTooltipContent indicator="dot" />}
             />
             <Area
+              yAxisId="left"
               type="monotone"
               dataKey="temp"
               stroke="hsl(var(--primary))"
@@ -63,6 +80,16 @@ export default function HourlyForecast({ data }: HourlyForecastProps) {
               fill="url(#colorTemp)"
               strokeWidth={2}
               name="Temperature"
+            />
+            <Area
+              yAxisId="right"
+              type="monotone"
+              dataKey="precipitation"
+              stroke="hsl(var(--accent))"
+              fill="transparent"
+              strokeWidth={2}
+              name="Precipitation"
+              dot={false}
             />
           </AreaChart>
         </ChartContainer>

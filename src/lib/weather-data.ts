@@ -95,7 +95,7 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
     const hourly: HourlyForecast[] = forecast.list.slice(0, 8).map((item: any) => ({
         time: format(fromUnixTime(item.dt), 'HH:00'),
         temp: Math.round(item.main.temp),
-        precipitation: item.pop * 100,
+        precipitation: item.pop,
         condition: item.weather[0] ? capitalize(item.weather[0].description) : 'Clear',
         icon: item.weather[0] ? mapOwmIconToIconType(item.weather[0].icon) : 'Sunny',
     }));
