@@ -3,8 +3,7 @@
 import { generateDailyWeatherSummary, type GenerateDailyWeatherSummaryInput } from '@/ai/flows/generate-daily-weather-summary';
 import { generateAgriculturalAdvice, type GenerateAgriculturalAdviceInput, type GenerateAgriculturalAdviceOutput } from '@/ai/flows/generate-agricultural-advice';
 import { generateGlobalAlerts, type GenerateGlobalAlertsOutput } from '@/ai/flows/generate-global-alerts';
-import { generate7DayForecast, type Generate7DayForecastInput } from '@/ai/flows/generate-7-day-forecast';
-import { getMockWeatherData, transformWeatherData, type WeatherData, type DailyForecast } from '@/lib/weather-data';
+import { getMockWeatherData, transformWeatherData, type WeatherData } from '@/lib/weather-data';
 
 export async function getAiSummary(input: GenerateDailyWeatherSummaryInput): Promise<string> {
     try {
@@ -33,17 +32,6 @@ export async function getGlobalAlerts(): Promise<GenerateGlobalAlertsOutput | nu
         return null;
     }
 }
-
-export async function getAi7DayForecast(input: Generate7DayForecastInput): Promise<DailyForecast[] | null> {
-    try {
-        const result = await generate7DayForecast(input);
-        return result.forecast;
-    } catch (error) {
-        console.error("AI 7-day forecast generation failed:", error);
-        return null;
-    }
-}
-
 
 export async function getRealtimeWeatherData(location: { lat: number, lon: number } | { city: string }): Promise<WeatherData | null> {
     const apiKey = process.env.OWM_API_KEY;
