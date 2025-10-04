@@ -46,8 +46,8 @@ export default function WeatherApp({ location }: WeatherAppProps) {
     useEffect(() => {
         const fetchWeather = async () => {
             if (!location) {
-                // If no location is provided in URL, redirect to location selection
-                router.push('/location');
+                setLoading(false);
+                setError("No location provided.");
                 return;
             }
 
@@ -59,13 +59,6 @@ export default function WeatherApp({ location }: WeatherAppProps) {
                 if (data) {
                     setWeatherData(data);
                     setError(null);
-                    if ('city' in location) {
-                         localStorage.setItem('weather_location_city', location.city);
-                         localStorage.removeItem('weather_location_coords');
-                    } else {
-                        localStorage.setItem('weather_location_coords', JSON.stringify({lat: location.lat, lon: location.lon}));
-                        localStorage.removeItem('weather_location_city');
-                    }
                 } else {
                     setError(`Could not fetch weather data. Try another location.`);
                 }
@@ -78,7 +71,7 @@ export default function WeatherApp({ location }: WeatherAppProps) {
         };
 
         fetchWeather();
-    }, [location, router]);
+    }, [location]);
 
     if (loading) {
         return (
@@ -93,10 +86,6 @@ export default function WeatherApp({ location }: WeatherAppProps) {
         return (
           <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-4 text-center">
             <p className="text-destructive">{error || "Could not load weather data."}</p>
-            <Button onClick={() => router.push('/location')}>
-                <MapPin className="mr-2" />
-                Select a Location
-            </Button>
           </div>
         );
     }
@@ -108,10 +97,6 @@ export default function WeatherApp({ location }: WeatherAppProps) {
             <div className="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8 space-y-6">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-5xl font-bold tracking-tight text-primary font-headline">WeatherEye</h1>
-                    <Button variant="outline" size="sm" onClick={() => router.push('/location')}>
-                        <MapPin className="mr-2"/>
-                        Change Location
-                    </Button>
                 </div>
                 
                 <div className="animate-in fade-in-0 duration-500">
