@@ -1,4 +1,5 @@
 import { format, fromUnixTime } from 'date-fns';
+import { utcToZonedTime } from 'date-fns-tz';
 
 // This is now used only for icon mapping.
 // The actual condition text will come directly from the API.
@@ -73,7 +74,19 @@ const mapOwmIconToIconType = (icon: string): WeatherIconType => {
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+// Helper to convert UTC seconds to a formatted time string in a given timezone
+// The `timezone` is the shift in seconds from UTC.
+const formatTimeForTimezone = (utcSeconds: number, timezoneOffset: number): string => {
+    const date = fromUnixTime(utcSeconds);
+    const zonedDate = utcToZonedTime(date, 'Etc/UTC'); // Treat the date as UTC first
+    zonedDate.setSeconds(zonedDate.getSeconds() + timezoneOffset); // Apply the offset
+    return format(zonedDate, 'HH:00', { timeZone: 'Etc/UTC' });
+};
+
+
 export const transformWeatherData = (weather: any, forecast: any, air: any): WeatherData => {
+    const timezoneOffset = weather.timezone;
+
     const current: CurrentWeather = {
         locationName: weather.name,
         temp: Math.round(weather.main.temp),
@@ -93,7 +106,7 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
     };
 
     const hourly: HourlyForecast[] = forecast.list.slice(0, 8).map((item: any) => ({
-        time: format(fromUnixTime(item.dt), 'HH:00'),
+        time: formatTimeForTimezone(item.dt, timezoneOffset),
         temp: Math.round(item.main.temp),
         precipitation: item.pop,
         condition: item.weather[0] ? capitalize(item.weather[0].description) : 'Clear',
@@ -104,7 +117,9 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
     const dailyForecasts: { [key: string]: DailyForecast } = {};
 
     forecast.list.forEach((item: any) => {
-        const day = format(fromUnixTime(item.dt), 'EEE');
+        const localDate = fromUnixTime(item.dt + timezoneOffset);
+        const day = format(localDate, 'EEE', { timeZone: 'Etc/UTC' });
+
         if (!dailyForecasts[day]) {
             dailyForecasts[day] = {
                 day: day,
@@ -117,7 +132,10 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
         } else {
             dailyForecasts[day].temp.min = Math.min(dailyForecasts[day].temp.min, item.main.temp);
             dailyForecasts[day].temp.max = Math.max(dailyForecasts[day].temp.max, item.main.temp);
-            if (item.dt_txt.includes("12:00:00")) {
+            
+            // For daily forecast, we can still use the noon-time weather as representative
+            const itemDate = fromUnixTime(item.dt + timezoneOffset);
+            if (format(itemDate, 'HH', { timeZone: 'Etc/UTC' }) === '12') {
                  dailyForecasts[day].condition = item.weather[0] ? capitalize(item.weather[0].description) : 'Clear';
                  dailyForecasts[day].icon = item.weather[0] ? mapOwmIconToIconType(item.weather[0].icon) : 'Sunny';
             }
@@ -128,7 +146,10 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
 
     const daily = Object.values(dailyForecasts).slice(0, 7);
     if (daily.length > 0) {
-      daily[0].day = "Today";
+      const today = format(utcToZonedTime(new Date(), 'Etc/UTC'), 'EEE', { timeZone: 'Etc/UTC' });
+      if (daily[0].day === today) {
+          daily[0].day = "Today";
+      }
     }
 
     return { current, hourly, daily };
