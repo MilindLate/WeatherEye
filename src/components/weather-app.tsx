@@ -2,17 +2,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { WeatherData } from '@/lib/weather-data';
+import type { WeatherData, DailyForecast } from '@/lib/weather-data';
 import CurrentWeather from './current-weather';
 import HourlyForecast from './hourly-forecast';
-import DailyForecast from './daily-forecast';
+import DailyForecastComponent from './daily-forecast';
 import AiSummary from './ai-summary';
 import AirQuality from './air-quality';
 import { Button } from './ui/button';
 import { Leaf, Globe, Siren, MapPin } from 'lucide-react';
-import { getRealtimeWeatherData } from '@/app/actions';
+import { getRealtimeWeatherData, getAi7DayForecast } from '@/app/actions';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { Skeleton } from './ui/skeleton';
+
 
 function NavCard({ href, icon, title, description }: { href: string, icon: React.ReactNode, title: string, description: string }) {
     return (
@@ -36,10 +38,26 @@ interface WeatherAppProps {
     location: { lat: number, lon: number } | { city: string } | null;
 }
 
+function DailyForecastSkeleton() {
+    return (
+        <Card>
+            <CardHeader>
+                <Skeleton className="h-8 w-48" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {[...Array(7)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+            </CardContent>
+        </Card>
+    );
+}
+
+
 export default function WeatherApp({ location }: WeatherAppProps) {
     const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+    const [aiDailyForecast, setAiDailyForecast] = useState<DailyForecast[] | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [forecastLoading, setForecastLoading] = useState(true);
 
     useEffect(() => {
         const fetchWeather = async () => {
@@ -50,13 +68,25 @@ export default function WeatherApp({ location }: WeatherAppProps) {
             }
 
             setLoading(true);
+            setForecastLoading(true);
             
             try {
+                // Fetch initial weather data from OWM
                 const data = await getRealtimeWeatherData(location);
                 
                 if (data) {
                     setWeatherData(data);
                     setError(null);
+                    
+                    // Once we have weather data, fetch the AI forecast
+                    const forecastInput = {
+                        locationName: data.current.locationName,
+                        currentTemp: data.current.temp,
+                        currentCondition: data.current.condition
+                    };
+                    const aiForecast = await getAi7DayForecast(forecastInput);
+                    setAiDailyForecast(aiForecast);
+
                 } else {
                     setError(`Could not fetch weather data. Try another location.`);
                 }
@@ -65,6 +95,7 @@ export default function WeatherApp({ location }: WeatherAppProps) {
                 setError(`Failed to fetch weather data. Please try changing the location.`);
             } finally {
                 setLoading(false);
+                setForecastLoading(false);
             }
         };
 
@@ -145,7 +176,17 @@ export default function WeatherApp({ location }: WeatherAppProps) {
                 </div>
 
                 <div className="animate-in fade-in-0 duration-1000">
-                    <DailyForecast data={weatherData.daily} />
+                    {forecastLoading ? (
+                        <DailyForecastSkeleton />
+                    ) : aiDailyForecast ? (
+                        <DailyForecastComponent data={aiDailyForecast} />
+                    ) : (
+                        <Card>
+                            <CardContent className="py-12 text-center">
+                                <p className="text-muted-foreground">Could not generate 7-day forecast.</p>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
             </div>
         </div>

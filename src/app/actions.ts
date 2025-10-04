@@ -3,7 +3,8 @@
 import { generateDailyWeatherSummary, type GenerateDailyWeatherSummaryInput } from '@/ai/flows/generate-daily-weather-summary';
 import { generateAgriculturalAdvice, type GenerateAgriculturalAdviceInput, type GenerateAgriculturalAdviceOutput } from '@/ai/flows/generate-agricultural-advice';
 import { generateGlobalAlerts, type GenerateGlobalAlertsOutput } from '@/ai/flows/generate-global-alerts';
-import { getMockWeatherData, transformWeatherData, type WeatherData } from '@/lib/weather-data';
+import { generate7DayForecast, type Generate7DayForecastInput } from '@/ai/flows/generate-7-day-forecast';
+import { getMockWeatherData, transformWeatherData, type WeatherData, type DailyForecast } from '@/lib/weather-data';
 
 export async function getAiSummary(input: GenerateDailyWeatherSummaryInput): Promise<string> {
     try {
@@ -33,6 +34,17 @@ export async function getGlobalAlerts(): Promise<GenerateGlobalAlertsOutput | nu
     }
 }
 
+export async function getAi7DayForecast(input: Generate7DayForecastInput): Promise<DailyForecast[] | null> {
+    try {
+        const result = await generate7DayForecast(input);
+        return result.forecast;
+    } catch (error) {
+        console.error("AI 7-day forecast generation failed:", error);
+        return null;
+    }
+}
+
+
 export async function getRealtimeWeatherData(location: { lat: number, lon: number } | { city: string }): Promise<WeatherData | null> {
     const apiKey = process.env.OWM_API_KEY;
     if (!apiKey) {
@@ -51,21 +63,27 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
     const airPollutionUrl = new URL('https://api.openweathermap.org/data/2.5/air_pollution');
     
     let lat: number, lon: number;
+    let city: string | undefined;
 
     try {
       if ('city' in location) {
-        weatherUrl.searchParams.set('q', location.city);
-        weatherUrl.searchParams.set('appid', apiKey);
-        weatherUrl.searchParams.set('units', 'metric');
-
-        const weatherResponse = await fetch(weatherUrl.toString());
-        if (!weatherResponse.ok) {
-            console.error(`Failed to fetch weather for city ${location.city}: ${weatherResponse.statusText}`);
-            return null;
+        city = location.city;
+        const geoUrl = new URL('https://api.openweathermap.org/geo/1.0/direct');
+        geoUrl.searchParams.set('q', city);
+        geoUrl.searchParams.set('limit', '1');
+        geoUrl.searchParams.set('appid', apiKey);
+        const geoResponse = await fetch(geoUrl.toString());
+         if (!geoResponse.ok) {
+            console.error(`Failed to geocode city ${city}: ${geoResponse.statusText}`);
+            return getMockWeatherData(51.5072, -0.1276, city);
         }
-        const weatherData = await weatherResponse.json();
-        lat = weatherData.coord.lat;
-        lon = weatherData.coord.lon;
+        const geoData = await geoResponse.json();
+        if (!geoData || geoData.length === 0) {
+            console.error(`Could not find location for city: ${city}`);
+            return getMockWeatherData(51.5072, -0.1276, city);
+        }
+        lat = geoData[0].lat;
+        lon = geoData[0].lon;
       } else {
         lat = location.lat;
         lon = location.lon;
@@ -82,10 +100,7 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
       weatherUrl.searchParams.set('lon', commonParams.lon);
       weatherUrl.searchParams.set('appid', commonParams.appid);
       weatherUrl.searchParams.set('units', commonParams.units);
-      if(weatherUrl.searchParams.has('q')) {
-        weatherUrl.searchParams.delete('q');
-      }
-
+      
       forecastUrl.searchParams.set('lat', commonParams.lat);
       forecastUrl.searchParams.set('lon', commonParams.lon);
       forecastUrl.searchParams.set('appid', commonParams.appid);
@@ -102,8 +117,8 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
       ]);
 
       if (!weatherRes.ok || !forecastRes.ok || !airRes.ok) {
-          console.error('One or more API requests failed.');
-          return null;
+          console.error('One or more API requests failed. Falling back to mock data');
+          return getMockWeatherData(lat, lon, city);
       }
 
       const weatherData = await weatherRes.json();
@@ -114,6 +129,6 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
 
     } catch (error) {
         console.error("Error fetching real-time weather data:", error);
-        return null;
+        return getMockWeatherData(51.5072, -0.1276, city);
     }
 }
