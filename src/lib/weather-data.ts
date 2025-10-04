@@ -1,5 +1,5 @@
 import { format, fromUnixTime } from 'date-fns';
-import { utcToZonedTime } from 'date-fns-tz';
+import { toZonedTime } from 'date-fns-tz';
 
 // This is now used only for icon mapping.
 // The actual condition text will come directly from the API.
@@ -78,7 +78,7 @@ const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 // The `timezone` is the shift in seconds from UTC.
 const formatTimeForTimezone = (utcSeconds: number, timezoneOffset: number): string => {
     const date = fromUnixTime(utcSeconds);
-    const zonedDate = utcToZonedTime(date, 'Etc/UTC'); // Treat the date as UTC first
+    const zonedDate = toZonedTime(date, 'Etc/UTC'); // Treat the date as UTC first
     zonedDate.setSeconds(zonedDate.getSeconds() + timezoneOffset); // Apply the offset
     return format(zonedDate, 'HH:00', { timeZone: 'Etc/UTC' });
 };
@@ -146,7 +146,7 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
 
     const daily = Object.values(dailyForecasts).slice(0, 7);
     if (daily.length > 0) {
-      const today = format(utcToZonedTime(new Date(), 'Etc/UTC'), 'EEE', { timeZone: 'Etc/UTC' });
+      const today = format(toZonedTime(new Date(), 'Etc/UTC'), 'EEE', { timeZone: 'Etc/UTC' });
       if (daily[0].day === today) {
           daily[0].day = "Today";
       }
