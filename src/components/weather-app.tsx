@@ -174,7 +174,7 @@ export default function WeatherApp() {
                                 <Button asChild variant="destructive">
                                     <Link href="/emergency">
                                         Get Help Now
-                                    </A>
+                                    </Link>
                                 </Button>
                             </CardContent>
                         </Card>
