@@ -11,7 +11,6 @@ import AirQuality from './air-quality';
 import { Button } from './ui/button';
 import { Leaf, Globe, Siren, MapPin } from 'lucide-react';
 import { getRealtimeWeatherData } from '@/app/actions';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription } from './ui/card';
 
@@ -41,13 +40,12 @@ export default function WeatherApp({ location }: WeatherAppProps) {
     const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-    const router = useRouter();
 
     useEffect(() => {
         const fetchWeather = async () => {
             if (!location) {
                 setLoading(false);
-                setError("No location provided.");
+                setError("No location provided. Please select a location.");
                 return;
             }
 
@@ -86,6 +84,9 @@ export default function WeatherApp({ location }: WeatherAppProps) {
         return (
           <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-4 text-center">
             <p className="text-destructive">{error || "Could not load weather data."}</p>
+             <Button asChild>
+                <Link href="/location">Change Location</Link>
+            </Button>
           </div>
         );
     }
@@ -97,6 +98,12 @@ export default function WeatherApp({ location }: WeatherAppProps) {
             <div className="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8 space-y-6">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-5xl font-bold tracking-tight text-primary font-headline">WeatherEye</h1>
+                     <Button asChild variant="outline">
+                        <Link href="/location">
+                           <MapPin className="mr-2" />
+                            Change Location
+                        </Link>
+                    </Button>
                 </div>
                 
                 <div className="animate-in fade-in-0 duration-500">

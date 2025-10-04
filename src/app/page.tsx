@@ -7,12 +7,12 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/dashboard');
+    router.replace('/location');
   }, [router]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <p>Redirecting to dashboard...</p>
+      <p>Redirecting to location selection...</p>
     </div>
   );
 }
