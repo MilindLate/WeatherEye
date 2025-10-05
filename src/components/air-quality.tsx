@@ -1,23 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Gauge } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { fetchAirQuality } from '@/lib/fetch-airquality';
+import type { AirQuality as AirQualityType } from '@/lib/weather-data';
 
 interface PollutantData {
   concentration: number;
   aqi: number;
-}
-
-interface AirQualityType {
-  overall_aqi: number;
-  PM2_5: PollutantData;
-  PM10: PollutantData;
-  SO2: PollutantData;
-  NO2: PollutantData;
-  O3: PollutantData;
-  CO: PollutantData;
 }
 
 const getAqiInfo = (aqi: number) => {
@@ -29,42 +18,30 @@ const getAqiInfo = (aqi: number) => {
   return { level: 'Hazardous', color: 'text-red-700', message: 'The entire population is more likely to be affected.' };
 };
 
-export default function AirQuality() {
-  const [data, setData] = useState<AirQualityType | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchAirQuality("Pune")
-      .then((d) => {
-        setData({
-          overall_aqi: d.overall_aqi,
-          PM2_5: d['PM2.5'],
-          PM10: d.PM10,
-          SO2: d.SO2,
-          NO2: d.NO2,
-          O3: d.O3,
-          CO: d.CO,
-        });
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <p>Loading air quality data...</p>;
-  if (error) return <p className="text-red-500">Error: {error}</p>;
-  if (!data) return null;
+export default function AirQuality({ data }: { data: AirQualityType | null }) {
+  if (!data) return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-primary">
+          <Gauge /> Air Quality & Pollutants
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-muted-foreground">Air quality data is not available for this location.</p>
+      </CardContent>
+    </Card>
+  );
 
   const aqiInfo = getAqiInfo(data.overall_aqi);
 
   const pollutants = [
-    { name: 'PM2.5', data: data.PM2_5, unit: 'μg/m³' },
+    { name: 'PM2.5', data: data['PM2.5'], unit: 'μg/m³' },
     { name: 'PM10', data: data.PM10, unit: 'μg/m³' },
     { name: 'SO₂', data: data.SO2, unit: 'μg/m³' },
     { name: 'NO₂', data: data.NO2, unit: 'μg/m³' },
     { name: 'O₃', data: data.O3, unit: 'μg/m³' },
     { name: 'CO', data: data.CO, unit: 'μg/m³' },
-  ];
+  ].filter(p => p.data); // Filter out pollutants that might be missing
 
   return (
     <Card>
@@ -84,7 +61,7 @@ export default function AirQuality() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {pollutants.map((p) => (
-            <Pollutant key={p.name} name={p.name} data={p.data} unit={p.unit} />
+            p.data && <Pollutant key={p.name} name={p.name} data={p.data} unit={p.unit} />
           ))}
         </div>
       </CardContent>
