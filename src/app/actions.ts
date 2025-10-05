@@ -54,6 +54,7 @@ async function getApiNinjasAirQuality(city: string): Promise<AirQuality | null> 
              return null;
         }
         
+        // Ensure all expected fields are present, providing defaults if they are not.
         const defaultPollutant = { concentration: 0, aqi: 0 };
         return {
             overall_aqi: data.overall_aqi ?? 0,
