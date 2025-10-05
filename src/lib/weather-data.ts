@@ -1,5 +1,5 @@
 
-import { format, fromUnixTime, addHours, addDays } from 'date-fns';
+import { format, fromUnixTime, addHours, addDays, startOfDay, addSeconds } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
 export type WeatherIconType =
@@ -32,8 +32,6 @@ export interface CurrentWeather {
   locationName: string;
   temp: number;
   feelsLike: number;
-  tempMin: number;
-  tempMax: number;
   pressure: number;
   condition: string;
   icon: WeatherIconType;
@@ -82,8 +80,7 @@ const mapOwmIconToIconType = (icon: string): WeatherIconType => {
 
 const formatTimeForTimezone = (utcSeconds: number, timezoneOffset: number): string => {
     const date = fromUnixTime(utcSeconds);
-    const zonedDate = toZonedTime(date, 'Etc/UTC');
-    zonedDate.setSeconds(zonedDate.getSeconds() + timezoneOffset);
+    const zonedDate = addSeconds(date, timezoneOffset)
     return format(zonedDate, 'HH:00', { timeZone: 'Etc/UTC' });
 };
 
@@ -95,8 +92,6 @@ export const transformWeatherData = (weather: any, forecast: any, air: AirQualit
         locationName: weather.name,
         temp: Math.round(weather.main.temp),
         feelsLike: Math.round(weather.main.feels_like),
-        tempMin: Math.round(weather.main.temp_min),
-        tempMax: Math.round(weather.main.temp_max),
         pressure: weather.main.pressure,
         condition: weather.weather[0] ? weather.weather[0].description : 'Clear',
         icon: weather.weather[0] ? mapOwmIconToIconType(weather.weather[0].icon) : 'Sunny',
@@ -114,64 +109,74 @@ export const transformWeatherData = (weather: any, forecast: any, air: AirQualit
     }));
 
 
-    const dailyForecasts: { [key: string]: DailyForecast } = {};
-    const todayStr = format(toZonedTime(fromUnixTime(weather.dt), 'Etc/UTC'), 'yyyy-MM-dd', { timeZone: 'Etc/UTC' });
+    const dailyForecasts: { [key: string]: { temps: number[], pops: number[], winds: any[], conditions: any[] } } = {};
+    const nowInTimezone = addSeconds(new Date(), timezoneOffset);
     
-    // Add today's min/max from the current weather data as the initial values for today
-    const todayDay = format(toZonedTime(fromUnixTime(weather.dt + timezoneOffset), 'Etc/UTC'), 'EEE', { timeZone: 'Etc/UTC' });
-    dailyForecasts[todayDay] = {
-      day: "Today",
-      temp: { min: weather.main.temp_min, max: weather.main.temp_max },
-      condition: weather.weather[0] ? weather.weather[0].description : 'Clear',
-      icon: weather.weather[0] ? mapOwmIconToIconType(weather.weather[0].icon) : 'Sunny',
-      precipitation: 0, // OWM forecast starts in a few hours, so we assume 0 for now.
-      wind: weather.wind.speed,
-    }
-
     forecast.list.forEach((item: any) => {
-        const itemDate = toZonedTime(fromUnixTime(item.dt + timezoneOffset), 'Etc/UTC');
-        const day = format(itemDate, 'EEE', { timeZone: 'Etc/UTC' });
-        
-        // Skip adding data to "Today" if it's already created from current weather
-        if (dailyForecasts[day] && dailyForecasts[day].day === "Today") {
-           dailyForecasts[day].temp.min = Math.min(dailyForecasts[day].temp.min, item.main.temp);
-           dailyForecasts[day].temp.max = Math.max(dailyForecasts[day].temp.max, item.main.temp);
-           dailyForecasts[day].precipitation = Math.max(dailyForecasts[day].precipitation, item.pop);
-           dailyForecasts[day].wind = Math.max(dailyForecasts[day].wind, item.wind.speed);
+        const itemDate = addSeconds(fromUnixTime(item.dt), timezoneOffset);
+        const dayKey = format(itemDate, 'yyyy-MM-dd', { timeZone: 'Etc/UTC' });
 
-           // update icon/condition for midday
-            if (format(itemDate, 'HH', { timeZone: 'Etc/UTC' }) === '12') {
-                 dailyForecasts[day].condition = item.weather[0] ? item.weather[0].description : 'Clear';
-                 dailyForecasts[day].icon = item.weather[0] ? mapOwmIconToIconType(item.weather[0].icon) : 'Sunny';
-            }
-            return;
+        if (!dailyForecasts[dayKey]) {
+            dailyForecasts[dayKey] = { temps: [], pops: [], winds: [], conditions: [] };
         }
-
-        if (!dailyForecasts[day]) {
-            dailyForecasts[day] = {
-                day: day,
-                temp: { min: item.main.temp, max: item.main.temp },
-                condition: item.weather[0] ? item.weather[0].description : 'Clear',
-                icon: item.weather[0] ? mapOwmIconToIconType(item.weather[0].icon) : 'Sunny',
-                precipitation: item.pop,
-                wind: item.wind.speed
-            };
-        } else {
-            dailyForecasts[day].temp.min = Math.min(dailyForecasts[day].temp.min, item.main.temp);
-            dailyForecasts[day].temp.max = Math.max(dailyForecasts[day].temp.max, item.main.temp);
-            
-            if (format(itemDate, 'HH', { timeZone: 'Etc/UTC' }) === '12') {
-                 dailyForecasts[day].condition = item.weather[0] ? item.weather[0].description : 'Clear';
-                 dailyForecasts[day].icon = item.weather[0] ? mapOwmIconToIconType(item.weather[0].icon) : 'Sunny';
-            }
-            dailyForecasts[day].precipitation = Math.max(dailyForecasts[day].precipitation, item.pop);
-            dailyForecasts[day].wind = Math.max(dailyForecasts[day].wind, item.wind.speed);
+        dailyForecasts[dayKey].temps.push(item.main.temp);
+        dailyForecasts[dayKey].pops.push(item.pop);
+        dailyForecasts[dayKey].winds.push(item.wind.speed);
+        
+        // Store condition for midday (around 12:00-14:00) as representative
+        const hour = parseInt(format(itemDate, 'H', { timeZone: 'Etc/UTC' }));
+        if (hour >= 12 && hour <= 14) {
+            dailyForecasts[dayKey].conditions.push({
+                condition: item.weather[0].description,
+                icon: mapOwmIconToIconType(item.weather[0].icon)
+            });
         }
     });
 
-    const daily = Object.values(dailyForecasts).slice(0, 7);
+    const daily: DailyForecast[] = Object.keys(dailyForecasts).map((dayKey, index) => {
+        const dayData = dailyForecasts[dayKey];
+        const dayDate = new Date(dayKey + 'T00:00:00Z');
+        const todayDate = startOfDay(nowInTimezone);
+        
+        let dayLabel: string;
+        if(format(dayDate, 'yyyy-MM-dd') === format(todayDate, 'yyyy-MM-dd')) {
+            dayLabel = "Today";
+        } else {
+            dayLabel = format(dayDate, 'EEE');
+        }
+
+        const representativeCondition = dayData.conditions[0] || { condition: 'Clear', icon: 'Sunny' };
+
+        return {
+            day: dayLabel,
+            temp: {
+                min: Math.min(...dayData.temps),
+                max: Math.max(...dayData.temps)
+            },
+            condition: representativeCondition.condition,
+            icon: representativeCondition.icon,
+            precipitation: Math.max(...dayData.pops),
+            wind: Math.max(...dayData.winds) * 3.6, // m/s to km/h
+        };
+    }).slice(0, 7);
+
+    // Ensure 'Today' has current weather data if the forecast starts later.
+    if (daily.length > 0 && daily[0].day !== 'Today') {
+        const todayData: DailyForecast = {
+            day: 'Today',
+            temp: {
+                min: weather.main.temp_min,
+                max: weather.main.temp_max
+            },
+            condition: current.condition,
+            icon: current.icon,
+            precipitation: hourly[0]?.precipitation || 0,
+            wind: current.wind,
+        }
+        daily.unshift(todayData);
+    }
     
-    return { current, hourly, daily };
+    return { current, hourly, daily: daily.slice(0, 7) };
 };
 
 // Mock data generation
@@ -209,8 +214,6 @@ export const getMockWeatherData = (lat: number, lon: number, city?: string): Wea
         locationName: city || `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`,
         temp: Math.round(randomBetween(15, 25, seed)),
         feelsLike: Math.round(randomBetween(14, 26, seed + 9)),
-        tempMin: Math.round(randomBetween(10, 15, seed + 10)),
-        tempMax: Math.round(randomBetween(25, 30, seed + 11)),
         pressure: Math.round(randomBetween(1000, 1020, seed + 12)),
         condition: currentCondition.condition,
         icon: currentCondition.icon,

@@ -1,15 +1,16 @@
 'use client';
 
-import type { CurrentWeather as CurrentWeatherType } from '@/lib/weather-data';
+import type { CurrentWeather as CurrentWeatherType, DailyForecast } from '@/lib/weather-data';
 import WeatherIcon from './weather-icon';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Droplets, Thermometer, Wind as WindIcon, MapPin, Gauge } from 'lucide-react';
 
 interface CurrentWeatherProps {
   data: CurrentWeatherType;
+  todayForecast: DailyForecast | null;
 }
 
-export default function CurrentWeather({ data }: CurrentWeatherProps) {
+export default function CurrentWeather({ data, todayForecast }: CurrentWeatherProps) {
   return (
     <Card className="bg-card/50 backdrop-blur-sm border-white/10">
       <CardHeader>
@@ -34,7 +35,7 @@ export default function CurrentWeather({ data }: CurrentWeatherProps) {
               <p className="text-xs text-muted-foreground">Feels Like</p>
             </div>
              <div className="flex flex-col items-center justify-center gap-1 p-2 rounded-lg bg-background/50">
-                <p className="font-bold text-sm">{Math.round(data.tempMax)}°/{Math.round(data.tempMin)}°</p>
+                <p className="font-bold text-sm">{todayForecast ? `${Math.round(todayForecast.temp.max)}°/${Math.round(todayForecast.temp.min)}°` : '--'}</p>
                 <p className="text-xs text-muted-foreground">Max / Min</p>
             </div>
             <div className="flex flex-col items-center justify-center gap-1 p-2 rounded-lg bg-background/50">

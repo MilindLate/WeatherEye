@@ -122,7 +122,7 @@ export default function WeatherApp({ location }: WeatherAppProps) {
                 </div>
                 
                 <div className="animate-in fade-in-0 duration-500">
-                    <CurrentWeather data={weatherData.current} />
+                    <CurrentWeather data={weatherData.current} todayForecast={todayForecast} />
                 </div>
                 
                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
