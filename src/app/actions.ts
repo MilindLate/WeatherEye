@@ -5,13 +5,13 @@ import { generateAgriculturalAdvice, type GenerateAgriculturalAdviceInput, type 
 import { generateGlobalAlerts, type GenerateGlobalAlertsOutput } from '@/ai/flows/generate-global-alerts';
 import { getMockWeatherData, transformWeatherData, type WeatherData, type AirQuality } from '@/lib/weather-data';
 
-export async function getAiSummary(input: GenerateDailyWeatherSummaryInput): Promise<string> {
+export async function getAiSummary(input: GenerateDailyWeatherSummaryInput): Promise<string | null> {
     try {
         const result = await generateDailyWeatherSummary(input);
         return result.summary;
     } catch (error) {
         console.error("AI summary generation failed:", error);
-        return "Could not generate weather summary at this time.";
+        return null;
     }
 }
 

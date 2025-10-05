@@ -5,7 +5,7 @@ import { useState, useEffect, useTransition, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, AlertTriangle, Thermometer, Wind, Zap, Waves, Flame, RefreshCw } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Thermometer, Wind, Zap, Waves, Flame, RefreshCw, ServerCrash } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getGlobalAlerts } from '../actions';
 import type { GlobalAlert } from '@/ai/flows/generate-global-alerts';
@@ -87,7 +87,7 @@ function AlertsContent() {
             if (result) {
                 setAlerts(result.alerts);
             } else {
-                setError("Could not fetch global alerts at this time. Please try again.");
+                setError("AI global alerts are currently unavailable. Please try again later.");
                 setAlerts([]);
             }
         });
@@ -123,7 +123,8 @@ function AlertsContent() {
                     <AlertSkeleton />
                 ) : error ? (
                      <Card>
-                        <CardContent className="py-12 text-center">
+                        <CardContent className="py-12 flex flex-col items-center justify-center text-center gap-2 text-muted-foreground">
+                             <ServerCrash className="w-10 h-10 text-destructive" />
                             <p className="text-destructive">{error}</p>
                         </CardContent>
                     </Card>

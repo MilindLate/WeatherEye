@@ -8,7 +8,7 @@ import type { GenerateAgriculturalAdviceOutput } from '@/ai/flows/generate-agric
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { ArrowLeft, ThumbsDown, ThumbsUp, ServerCrash } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSearchParams } from 'next/navigation';
 
@@ -47,6 +47,7 @@ function AgricultureContent() {
     const [advice, setAdvice] = useState<GenerateAgriculturalAdviceOutput | null>(null);
     const [isPending, startTransition] = useTransition();
     const [loadingWeather, setLoadingWeather] = useState(true);
+    const [aiError, setAiError] = useState(false);
 
     useEffect(() => {
         const fetchWeather = async () => {
@@ -67,6 +68,7 @@ function AgricultureContent() {
         if (weatherData?.daily[0] && weatherData.current.locationName) {
             const todayForecast = weatherData.daily[0];
             startTransition(async () => {
+                setAiError(false);
                 const input = {
                     locationName: weatherData.current.locationName,
                     temperatureHigh: todayForecast.temp.max,
@@ -75,6 +77,9 @@ function AgricultureContent() {
                     precipitationProbability: todayForecast.precipitation,
                 };
                 const result = await getAgriculturalAdvice(input);
+                if (result === null) {
+                    setAiError(true);
+                }
                 setAdvice(result);
             });
         }
@@ -150,6 +155,14 @@ function AgricultureContent() {
 
                 {isPending || loadingWeather ? (
                     <AdviceSkeleton />
+                ) : aiError ? (
+                     <Card>
+                        <CardContent className="py-12 flex flex-col items-center justify-center text-center gap-2 text-muted-foreground">
+                            <ServerCrash className="w-10 h-10 text-destructive" />
+                            <p>AI agricultural advice is currently unavailable.</p>
+                            <p className="text-xs">Please try again later.</p>
+                        </CardContent>
+                    </Card>
                 ) : advice ? (
                     <div className="grid md:grid-cols-2 gap-6 animate-in fade-in-0 duration-500">
                         <Card className="border-green-500/50">
