@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Suspense, memo } from 'react';
+import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -9,12 +9,11 @@ import { ArrowLeft, Globe } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSearchParams } from 'next/navigation';
 
-// Dynamically import the map component and wrap it with React.memo
-// This prevents re-rendering and is key to fixing the map initialization error.
-const Map = memo(dynamic(() => import('@/components/map'), { 
+// Dynamically import the map component to ensure it only renders on the client-side.
+const Map = dynamic(() => import('@/components/map'), { 
     ssr: false,
     loading: () => <Skeleton className="h-[calc(100vh-200px)] w-full" />
-}));
+});
 
 function MapPageContent() {
     const searchParams = useSearchParams();
