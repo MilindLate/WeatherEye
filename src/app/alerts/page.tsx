@@ -9,24 +9,25 @@ import { ArrowLeft, AlertTriangle, Thermometer, Wind, Zap, Waves, Flame, Refresh
 import { Skeleton } from '@/components/ui/skeleton';
 import { getGlobalAlerts } from '../actions';
 import type { GlobalAlert } from '@/ai/flows/generate-global-alerts';
+import { Badge } from '@/components/ui/badge';
 
 
 const AlertIcon = ({ type }: { type: GlobalAlert['type'] }) => {
   switch (type) {
     case 'Extreme Heat':
-      return <Thermometer className="w-6 h-6 text-red-500" />;
+      return <Thermometer className="w-8 h-8 text-red-500" />;
     case 'Severe Thunderstorm':
-      return <Zap className="w-6 h-6 text-yellow-500" />;
+      return <Zap className="w-8 h-8 text-yellow-500" />;
     case 'High Winds':
-      return <Wind className="w-6 h-6 text-orange-500" />;
+      return <Wind className="w-8 h-8 text-blue-400" />;
     case 'Flooding':
-        return <Waves className="w-6 h-6 text-blue-500" />;
+        return <Waves className="w-8 h-8 text-blue-600" />;
     case 'Wildfire':
-        return <Flame className="w-6 h-6 text-orange-600" />;
+        return <Flame className="w-8 h-8 text-orange-600" />;
     case 'Tsunami Watch':
-        return <Waves className="w-6 h-6 text-cyan-500" />;
+        return <Waves className="w-8 h-8 text-cyan-500" />;
     default:
-      return <AlertTriangle className="w-6 h-6 text-gray-500" />;
+      return <AlertTriangle className="w-8 h-8 text-gray-500" />;
   }
 };
 
@@ -46,6 +47,7 @@ function AlertSkeleton() {
                         </div>
                     </CardHeader>
                     <CardContent>
+                         <Skeleton className="h-4 w-1/4 mb-3" />
                         <Skeleton className="h-4 w-full" />
                          <Skeleton className="h-4 w-3/4 mt-2" />
                     </CardContent>
@@ -55,12 +57,12 @@ function AlertSkeleton() {
     )
 }
 
-const getSeverityClass = (severity: GlobalAlert['severity']) => {
+const getSeverityClasses = (severity: GlobalAlert['severity']): { bg: string, text: string, border: string } => {
     switch (severity) {
-        case 'Critical': return 'border-red-600';
-        case 'Severe': return 'border-red-500';
-        case 'High': return 'border-orange-500';
-        default: return 'border-yellow-500';
+        case 'Critical': return { bg: 'bg-red-900/20', text: 'text-red-400', border: 'border-red-600/50' };
+        case 'Severe': return { bg: 'bg-red-500/10', text: 'text-red-500', border: 'border-red-500/50' };
+        case 'High': return { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/50' };
+        default: return { bg: 'bg-yellow-500/10', text: 'text-yellow-400', border: 'border-yellow-500/50' };
     }
 }
 
@@ -118,26 +120,28 @@ export default function AlertsPage() {
                     </Card>
                 ) : (
                     <div className="space-y-4 animate-in fade-in-0 duration-500">
-                        {alerts.map((alert) => (
-                            <Card key={alert.id} className={`border-l-4 ${getSeverityClass(alert.severity)}`}>
-                                <CardHeader>
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <CardTitle className="flex items-center gap-3">
-                                                <AlertTriangle className="text-red-500" />
-                                                {alert.type}
-                                            </CardTitle>
-                                            <CardDescription className="mt-1">{alert.city}, {alert.country}</CardDescription>
+                        {alerts.map((alert) => {
+                            const severityClasses = getSeverityClasses(alert.severity);
+                            return (
+                                <Card key={alert.id} className={`border ${severityClasses.border} ${severityClasses.bg} overflow-hidden`}>
+                                    <CardHeader className="flex flex-row items-start justify-between gap-4 p-4">
+                                        <div className="flex-1 space-y-1">
+                                            <CardTitle className="text-lg">{alert.type}</CardTitle>
+                                            <CardDescription>{alert.city}, {alert.country}</CardDescription>
                                         </div>
-                                        <AlertIcon type={alert.type} />
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-foreground/90">{alert.summary}</p>
-                                    <p className="text-sm font-bold mt-2">Severity: {alert.severity}</p>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                        <div className="p-3 bg-background/50 rounded-full">
+                                          <AlertIcon type={alert.type} />
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="p-4 pt-0">
+                                         <Badge variant="destructive" className={`${severityClasses.bg} ${severityClasses.text} border-0 mb-3`}>
+                                            {alert.severity} Severity
+                                        </Badge>
+                                        <p className="text-foreground/90">{alert.summary}</p>
+                                    </CardContent>
+                                </Card>
+                            )
+                        })}
                     </div>
                 )}
             </div>
