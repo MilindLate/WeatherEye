@@ -49,8 +49,6 @@ async function getApiNinjasAirQuality(city: string) {
         }
         const data = await response.json();
         
-        // The API returns an object where keys are pollutant names
-        // and overall_aqi is at the top level.
         if (data.error) {
              console.error(`API Ninjas returned an error for ${city}: ${data.error}`);
              return null;
