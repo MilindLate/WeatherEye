@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
-import { getMockWeatherData } from '@/lib/weather-data';
-import type { WeatherData, DailyForecast } from '@/lib/weather-data';
+import { useState, useEffect, useTransition, Suspense } from 'react';
+import { getRealtimeWeatherData } from '@/app/actions';
+import type { WeatherData } from '@/lib/weather-data';
 import { getAgriculturalAdvice } from '@/app/actions';
 import type { GenerateAgriculturalAdviceOutput } from '@/ai/flows/generate-agricultural-advice';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle, ThumbsDown, ThumbsUp, XCircle } from 'lucide-react';
+import { ArrowLeft, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSearchParams } from 'next/navigation';
 
 function AdviceSkeleton() {
     return (
@@ -38,22 +39,36 @@ function AdviceSkeleton() {
     )
 }
 
-export default function AgriculturePage() {
+function AgricultureContent() {
+    const searchParams = useSearchParams();
+    const city = searchParams.get('city');
+
     const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
     const [advice, setAdvice] = useState<GenerateAgriculturalAdviceOutput | null>(null);
     const [isPending, startTransition] = useTransition();
+    const [loadingWeather, setLoadingWeather] = useState(true);
 
     useEffect(() => {
-        // Using mock weather data for now, similar to the main dashboard
-        const data = getMockWeatherData(51.5072, -0.1276);
-        setWeatherData(data);
-    }, []);
+        const fetchWeather = async () => {
+            if (!city) {
+                setLoadingWeather(false);
+                return;
+            };
+
+            setLoadingWeather(true);
+            const data = await getRealtimeWeatherData({ city });
+            setWeatherData(data);
+            setLoadingWeather(false);
+        };
+        fetchWeather();
+    }, [city]);
 
     useEffect(() => {
-        if (weatherData?.daily[0]) {
+        if (weatherData?.daily[0] && weatherData.current.locationName) {
             const todayForecast = weatherData.daily[0];
             startTransition(async () => {
                 const input = {
+                    locationName: weatherData.current.locationName,
                     temperatureHigh: todayForecast.temp.max,
                     temperatureLow: todayForecast.temp.min,
                     condition: todayForecast.condition,
@@ -67,11 +82,36 @@ export default function AgriculturePage() {
 
     const todayForecast = weatherData?.daily[0];
 
+    const getDashboardLink = () => {
+        const params = new URLSearchParams();
+        if (city) params.set('city', city);
+        return `/dashboard?${params.toString()}`;
+    }
+
+    if (loadingWeather) {
+         return (
+            <div className="min-h-screen flex flex-col items-center justify-center p-4">
+                <p className="text-muted-foreground animate-pulse">Loading location forecast...</p>
+            </div>
+        );
+    }
+    
+    if (!city) {
+         return (
+            <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-4 text-center">
+                <p className="text-destructive">No location specified.</p>
+                <Button asChild>
+                    <Link href="/location">Select a Location</Link>
+                </Button>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen w-full bg-background">
             <div className="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8 space-y-6">
-                <Button asChild variant="outline" className="mb-4">
-                    <Link href="/dashboard">
+                 <Button asChild variant="outline" className="mb-4">
+                    <Link href={getDashboardLink()}>
                         <ArrowLeft className="mr-2" />
                         Back to Dashboard
                     </Link>
@@ -79,7 +119,7 @@ export default function AgriculturePage() {
 
                 <div className="text-center">
                     <h1 className="text-4xl font-bold tracking-tight text-primary font-headline">Agricultural Guidance</h1>
-                    <p className="text-muted-foreground mt-2">AI-powered crop recommendations based on today's forecast.</p>
+                    <p className="text-muted-foreground mt-2">AI-powered crop recommendations for <span className="font-bold text-foreground">{weatherData?.current.locationName || city}</span>.</p>
                 </div>
 
                 {todayForecast && (
@@ -108,7 +148,7 @@ export default function AgriculturePage() {
                     </Card>
                 )}
 
-                {isPending ? (
+                {isPending || loadingWeather ? (
                     <AdviceSkeleton />
                 ) : advice ? (
                     <div className="grid md:grid-cols-2 gap-6 animate-in fade-in-0 duration-500">
@@ -155,4 +195,12 @@ export default function AgriculturePage() {
             </div>
         </div>
     );
+}
+
+export default function AgriculturePage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+            <AgricultureContent />
+        </Suspense>
+    )
 }

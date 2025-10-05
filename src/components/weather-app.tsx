@@ -74,6 +74,18 @@ export default function WeatherApp({ location }: WeatherAppProps) {
         fetchWeather();
     }, [location]);
 
+    const getLinkWithLocation = (baseHref: string) => {
+        if (!location) return baseHref;
+        const params = new URLSearchParams();
+        if ('city' in location && location.city) {
+            params.set('city', location.city);
+        } else if ('lat' in location && location.lat) {
+            params.set('lat', String(location.lat));
+            params.set('lon', String(location.lon));
+        }
+        return `${baseHref}?${params.toString()}`;
+    }
+
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-4">
@@ -115,13 +127,13 @@ export default function WeatherApp({ location }: WeatherAppProps) {
                 
                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <NavCard 
-                        href="/agriculture"
+                        href={getLinkWithLocation('/agriculture')}
                         icon={<Leaf size={20}/>}
                         title="Agricultural Guidance"
                         description="AI crop advice"
                     />
                     <NavCard 
-                        href="/alerts"
+                        href={getLinkWithLocation('/alerts')}
                         icon={<Globe size={20}/>}
                         title="Global Red Alerts"
                         description="Severe weather worldwide"
