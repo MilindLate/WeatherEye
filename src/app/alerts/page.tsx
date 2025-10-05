@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { getGlobalAlerts } from '../actions';
 import type { GlobalAlert } from '@/ai/flows/generate-global-alerts';
 import { Badge } from '@/components/ui/badge';
+import { useSearchParams } from 'next/navigation';
 
 
 const AlertIcon = ({ type }: { type: GlobalAlert['type'] }) => {
@@ -66,10 +67,18 @@ const getSeverityClasses = (severity: GlobalAlert['severity']): { bg: string, te
     }
 }
 
-export default function AlertsPage() {
+function AlertsContent() {
+    const searchParams = useSearchParams();
+    const city = searchParams.get('city');
     const [alerts, setAlerts] = useState<GlobalAlert[]>([]);
     const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
+
+    const getDashboardLink = () => {
+        const params = new URLSearchParams();
+        if (city) params.set('city', city);
+        return `/dashboard?${params.toString()}`;
+    }
 
     const fetchAlerts = () => {
         startTransition(async () => {
@@ -93,7 +102,7 @@ export default function AlertsPage() {
             <div className="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8 space-y-6">
                 <div className="flex justify-between items-center">
                     <Button asChild variant="outline">
-                        <Link href="/dashboard">
+                        <Link href={getDashboardLink()}>
                             <ArrowLeft className="mr-2" />
                             Back to Dashboard
                         </Link>
@@ -147,4 +156,12 @@ export default function AlertsPage() {
             </div>
         </div>
     );
+}
+
+export default function AlertsPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+            <AlertsContent />
+        </Suspense>
+    )
 }
