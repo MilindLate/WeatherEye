@@ -97,13 +97,13 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
         humidity: weather.main.humidity,
         wind: Math.round(weather.wind.speed * 3.6), // m/s to km/h
         airQuality: {
-            aqi: air.list[0].main.aqi,
-            pm25: air.list[0].components.pm2_5,
-            pm10: air.list[0].components.pm10,
-            so2: air.list[0].components.so2,
-            no2: air.list[0].components.no2,
-            o3: air.list[0].components.o3,
-            co: air.list[0].components.co,
+            aqi: air.list[0].aqi,
+            pm25: air.list[0].pm25,
+            pm10: air.list[0].pm10,
+            so2: air.list[0].so2,
+            no2: air.list[0].no2,
+            o3: air.list[0].o3,
+            co: air.list[0].co,
         }
     };
 
