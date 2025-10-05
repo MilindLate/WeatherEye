@@ -37,7 +37,7 @@ export interface CurrentWeather {
   icon: WeatherIconType;
   humidity: number;
   wind: number;
-  airQuality: AirQuality;
+  airQuality: AirQuality | null;
 }
 
 export interface HourlyForecast {
@@ -85,7 +85,7 @@ const formatTimeForTimezone = (utcSeconds: number, timezoneOffset: number): stri
 };
 
 
-export const transformWeatherData = (weather: any, forecast: any, air: AirQuality): WeatherData => {
+export const transformWeatherData = (weather: any, forecast: any, air: AirQuality | null): WeatherData => {
     const timezoneOffset = weather.timezone;
 
     const current: CurrentWeather = {
