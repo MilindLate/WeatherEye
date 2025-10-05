@@ -9,7 +9,7 @@ import DailyForecastComponent from './daily-forecast';
 import AiSummary from './ai-summary';
 import AirQuality from './air-quality';
 import { Button } from './ui/button';
-import { Leaf, Globe, Siren, MapPin } from 'lucide-react';
+import { Leaf, Globe, Siren, MapPin, Map } from 'lucide-react';
 import { getRealtimeWeatherData } from '@/app/actions';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
@@ -125,7 +125,7 @@ export default function WeatherApp({ location }: WeatherAppProps) {
                     <CurrentWeather data={weatherData.current} />
                 </div>
                 
-                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <NavCard 
                         href={getLinkWithLocation('/agriculture')}
                         icon={<Leaf size={20}/>}
@@ -139,7 +139,13 @@ export default function WeatherApp({ location }: WeatherAppProps) {
                         description="Severe weather worldwide"
                     />
                      <NavCard 
-                        href="/emergency"
+                        href={getLinkWithLocation('/map')}
+                        icon={<Map size={20}/>}
+                        title="Environment Map"
+                        description="Global AQI data"
+                    />
+                     <NavCard 
+                        href={getLinkWithLocation('/emergency')}
                         icon={<Siren size={20}/>}
                         title="Emergency Assistance"
                         description="Immediate safety guide"

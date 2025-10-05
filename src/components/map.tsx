@@ -1,67 +1,105 @@
-{
-  "name": "nextn",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --turbopack -p 9002",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch srcai/dev.ts",
-    "build": "NODE_ENV=production next build",
-    "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@genkit-ai/google-genai": "^1.20.0",
-    "@genkit-ai/next": "^1.20.0",
-    "@hookform/resolvers": "^4.1.3",
-    "@radix-ui/react-accordion": "^1.2.3",
-    "@radix-ui/react-alert-dialog": "^1.1.6",
-    "@radix-ui/react-avatar": "^1.1.3",
-    "@radix-ui/react-checkbox": "^1.1.4",
-    "@radix-ui/react-collapsible": "^1.1.11",
-    "@radix-ui/react-dialog": "^1.1.6",
-    "@radix-ui/react-dropdown-menu": "^2.1.6",
-    "@radix-ui/react-label": "^2.1.2",
-    "@radix-ui/react-menubar": "^1.1.6",
-    "@radix-ui/react-popover": "^1.1.6",
-    "@radix-ui/react-progress": "^1.1.2",
-    "@radix-ui/react-radio-group": "^1.2.3",
-    "@radix-ui/react-scroll-area": "^1.2.3",
-    "@radix-ui/react-select": "^2.1.6",
-    "@radix-ui/react-separator": "^1.1.2",
-    "@radix-ui/react-slider": "^1.2.3",
-    "@radix-ui/react-slot": "^1.2.3",
-    "@radix-ui/react-switch": "^1.1.3",
-    "@radix-ui/react-tabs": "^1.1.3",
-    "@radix-ui/react-toast": "^1.2.6",
-    "@radix-ui/react-tooltip": "^1.1.8",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^3.6.0",
-    "date-fns-tz": "^3.1.3",
-    "dotenv": "^16.5.0",
-    "embla-carousel-react": "^8.6.0",
-    "firebase": "^11.9.1",
-    "genkit": "^1.20.0",
-    "lucide-react": "^0.475.0",
-    "next": "15.3.3",
-    "patch-package": "^8.0.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-hook-form": "^7.54.2",
-    "recharts": "^2.15.1",
-    "tailwind-merge": "^3.0.1",
-    "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.24.2"
-  },
-  "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "genkit-cli": "^1.20.0",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+'use client';
+
+import { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import { getMapData } from '@/app/actions';
+
+interface Station {
+  lat: number;
+  lon: number;
+  uid: number;
+  aqi: string;
+  station: {
+    name: string;
+    time: string;
+  };
+}
+
+const getAqiColor = (aqi: number) => {
+  if (aqi <= 50) return '#009966'; // Good
+  if (aqi <= 100) return '#FFDE33'; // Moderate
+  if (aqi <= 150) return '#FF9933'; // Unhealthy for Sensitive
+  if (aqi <= 200) return '#CC0033'; // Unhealthy
+  if (aqi <= 300) return '#660099'; // Very Unhealthy
+  return '#7E0023'; // Hazardous
+};
+
+function MapMarkers({ stations }: { stations: Station[] }) {
+  return (
+    <>
+      {stations.map((station) => {
+        const aqi = parseInt(station.aqi, 10);
+        if (isNaN(aqi) || station.lat === null || station.lon === null) {
+          return null;
+        }
+
+        return (
+          <CircleMarker
+            key={station.uid}
+            center={[station.lat, station.lon]}
+            radius={8}
+            pathOptions={{
+              color: getAqiColor(aqi),
+              fillColor: getAqiColor(aqi),
+              fillOpacity: 0.7,
+            }}
+          >
+            <Popup>
+              <div className="text-sm">
+                <p className="font-bold text-base">{station.station.name}</p>
+                <p className="font-bold text-lg" style={{ color: getAqiColor(aqi) }}>
+                  AQI: {aqi}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Last updated: {new Date(station.station.time).toLocaleString()}
+                </p>
+              </div>
+            </Popup>
+          </CircleMarker>
+        );
+      })}
+    </>
+  );
+}
+
+
+export default function Map() {
+  const [stations, setStations] = useState<Station[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const data = await getMapData();
+        setStations(data);
+      } catch (err) {
+        setError("Could not load map data. Please try again later.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-full bg-muted animate-pulse">Loading map data...</div>;
   }
+  
+  if (error) {
+     return <div className="flex items-center justify-center h-full bg-destructive/10 text-destructive">{error}</div>;
+  }
+
+  return (
+    <MapContainer center={[20, 0]} zoom={2} style={{ height: '100%', width: '100%', backgroundColor: 'hsl(var(--background))' }}>
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+      />
+      <MapMarkers stations={stations} />
+    </MapContainer>
+  );
 }
