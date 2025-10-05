@@ -40,13 +40,15 @@ function EmergencyContent() {
 
     return (
         <div className="min-h-screen w-full bg-background">
-            <div className="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8 space-y-8">
-                 <Button asChild variant="outline" className="mb-4">
+        <div className="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8 space-y-6">
+            <div className="flex justify-between items-center">
+                <Button asChild variant="outline">
                     <Link href={getDashboardLink()}>
                         <ArrowLeft className="mr-2" />
                         Back to Dashboard
                     </Link>
                 </Button>
+            </div>
 
                 <div className="text-center">
                     <Siren className="mx-auto h-16 w-16 text-destructive" />
