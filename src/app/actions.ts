@@ -1,3 +1,4 @@
+
 'use server'
 
 import { generateDailyWeatherSummary, type GenerateDailyWeatherSummaryInput } from '@/ai/flows/generate-daily-weather-summary';
@@ -35,43 +36,43 @@ export async function getGlobalAlerts(): Promise<GenerateGlobalAlertsOutput | nu
 
 
 async function getApiNinjasAirQuality(city: string): Promise<AirQuality | null> {
-        const apiKey = process.env.API_NINJAS_KEY;
-        if (!apiKey) {
-            console.warn("API-Ninjas key not found. Skipping air quality fetch.");
-            return null;
-        }
-
-        try {
-            const url = `https://api.api-ninjas.com/v1/airquality?city=${city}`;
-            const response = await fetch(url, { headers: { 'X-Api-Key': apiKey } });
-            if (!response.ok) {
-                console.error(`API Ninjas request failed for ${city}: ${response.statusText}`);
-                return null;
-            }
-            const data = await response.json();
-            
-            if (data.error) {
-                 console.error(`API Ninjas returned an error for ${city}: ${data.error}`);
-                 return null;
-            }
-            
-            // Ensure all expected fields are present, providing defaults if they are not.
-            const defaultPollutant = { concentration: 0, aqi: 0 };
-            return {
-                overall_aqi: data.overall_aqi ?? 0,
-                CO: data.CO ?? defaultPollutant,
-                NO2: data.NO2 ?? defaultPollutant,
-                O3: data.O3 ?? defaultPollutant,
-                SO2: data.SO2 ?? defaultPollutant,
-                'PM2.5': data['PM2.5'] ?? defaultPollutant,
-                PM10: data.PM10 ?? defaultPollutant,
-            };
-
-        } catch (error) {
-            console.error("Error fetching API Ninjas air quality:", error);
-            return null;
-        }
+    const apiKey = process.env.API_NINJAS_KEY;
+    if (!apiKey) {
+        console.warn("API-Ninjas key not found. Skipping air quality fetch.");
+        return null;
     }
+
+    try {
+        const url = `https://api.api-ninjas.com/v1/airquality?city=${city}`;
+        const response = await fetch(url, { headers: { 'X-Api-Key': apiKey } });
+        if (!response.ok) {
+            console.error(`API Ninjas request failed for ${city}: ${response.statusText}`);
+            return null;
+        }
+        const data = await response.json();
+        
+        if (data.error) {
+             console.error(`API Ninjas returned an error for ${city}: ${data.error}`);
+             return null;
+        }
+        
+        // Ensure all expected fields are present, providing defaults if they are not.
+        const defaultPollutant = { concentration: 0, aqi: 0 };
+        return {
+            overall_aqi: data.overall_aqi ?? 0,
+            CO: data.CO ?? defaultPollutant,
+            NO2: data.NO2 ?? defaultPollutant,
+            O3: data.O3 ?? defaultPollutant,
+            SO2: data.SO2 ?? defaultPollutant,
+            'PM2.5': data['PM2.5'] ?? defaultPollutant,
+            PM10: data.PM10 ?? defaultPollutant,
+        };
+
+    } catch (error) {
+        console.error("Error fetching API Ninjas air quality:", error);
+        return null;
+    }
+}
 
 
 export async function getRealtimeWeatherData(location: { lat: number, lon: number } | { city: string }): Promise<WeatherData | null> {
