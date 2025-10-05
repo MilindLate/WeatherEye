@@ -1,4 +1,3 @@
-
 'use client';
 
 import { MapContainer, TileLayer } from 'react-leaflet';

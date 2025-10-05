@@ -16,7 +16,7 @@ const Map = memo(dynamic(() => import('@/components/map'), {
     loading: () => <Skeleton className="h-[calc(100vh-200px)] w-full" />
 }));
 
-function MapPage() {
+function MapPageContent() {
     const searchParams = useSearchParams();
 
     const getDashboardLink = () => {
@@ -61,10 +61,10 @@ function MapPage() {
     );
 }
 
-export default function MapPageWrapper() {
+export default function MapPage() {
     return (
         <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-            <MapPage />
+            <MapPageContent />
         </Suspense>
     )
 }
