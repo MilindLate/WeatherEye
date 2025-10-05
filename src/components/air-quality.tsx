@@ -1,6 +1,6 @@
 'use client';
 
-import type { AirQuality as AirQualityType } from '@/lib/weather-data';
+import type { AirQuality as AirQualityType, PollutantData } from '@/lib/weather-data';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Gauge } from 'lucide-react';
 
@@ -18,7 +18,16 @@ const getAqiInfo = (aqi: number): { level: string; color: string; message: strin
 };
 
 export default function AirQuality({ data }: AirQualityProps) {
-  const aqiInfo = getAqiInfo(data.aqi);
+  const aqiInfo = getAqiInfo(data.overall_aqi);
+  
+  const pollutants: { name: string; data: PollutantData; unit: string }[] = [
+    { name: 'PM2.5', data: data['PM2.5'], unit: 'μg/m³' },
+    { name: 'PM10', data: data.PM10, unit: 'μg/m³' },
+    { name: 'SO₂', data: data.SO2, unit: 'μg/m³' },
+    { name: 'NO₂', data: data.NO2, unit: 'μg/m³' },
+    { name: 'O₃', data: data.O3, unit: 'μg/m³' },
+    { name: 'CO', data: data.CO, unit: 'μg/m³' },
+  ];
 
   return (
     <Card>
@@ -31,31 +40,30 @@ export default function AirQuality({ data }: AirQualityProps) {
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
           <div>
-            <p className="text-sm text-muted-foreground">Air Quality Index (AQI)</p>
-            <p className={`text-3xl font-bold ${aqiInfo.color}`}>{data.aqi}</p>
+            <p className="text-sm text-muted-foreground">Overall Air Quality Index (AQI)</p>
+            <p className={`text-3xl font-bold ${aqiInfo.color}`}>{data.overall_aqi}</p>
             <p className={`font-semibold ${aqiInfo.color}`}>{aqiInfo.level}</p>
           </div>
           <p className="text-sm text-right max-w-[180px]">{aqiInfo.message}</p>
         </div>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-4 text-center">
-            <Pollutant name="PM2.5" value={data.pm25} unit="μg/m³" />
-            <Pollutant name="PM10" value={data.pm10} unit="μg/m³" />
-            <Pollutant name="SO₂" value={data.so2} unit="μg/m³" />
-            <Pollutant name="NO₂" value={data.no2} unit="μg/m³" />
-            <Pollutant name="O₃" value={data.o3} unit="μg/m³" />
-            <Pollutant name="CO" value={data.co} unit="mg/m³" />
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {pollutants.map(p => (
+                 <Pollutant key={p.name} name={p.name} data={p.data} unit={p.unit} />
+            ))}
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function Pollutant({ name, value, unit }: { name: string, value: number, unit: string }) {
+function Pollutant({ name, data, unit }: { name: string, data: PollutantData, unit: string }) {
+    const aqiInfo = getAqiInfo(data.aqi);
     return (
-        <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-background/50">
-            <p className="text-xs text-muted-foreground">{name}</p>
-            <p className="font-bold">{value}</p>
+        <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-background/50 border">
+            <p className="text-sm font-semibold text-muted-foreground">{name}</p>
+            <p className="font-bold text-lg">{data.concentration}</p>
             <p className="text-xs text-muted-foreground">{unit}</p>
+            <p className={`text-xs font-bold mt-1 ${aqiInfo.color}`}>(AQI: {data.aqi})</p>
         </div>
     )
 }

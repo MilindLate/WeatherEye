@@ -3,7 +3,7 @@
 import { generateDailyWeatherSummary, type GenerateDailyWeatherSummaryInput } from '@/ai/flows/generate-daily-weather-summary';
 import { generateAgriculturalAdvice, type GenerateAgriculturalAdviceInput, type GenerateAgriculturalAdviceOutput } from '@/ai/flows/generate-agricultural-advice';
 import { generateGlobalAlerts, type GenerateGlobalAlertsOutput } from '@/ai/flows/generate-global-alerts';
-import { getMockWeatherData, transformWeatherData, type WeatherData } from '@/lib/weather-data';
+import { getMockWeatherData, transformWeatherData, type WeatherData, type AirQuality } from '@/lib/weather-data';
 
 export async function getAiSummary(input: GenerateDailyWeatherSummaryInput): Promise<string> {
     try {
@@ -33,7 +33,7 @@ export async function getGlobalAlerts(): Promise<GenerateGlobalAlertsOutput | nu
     }
 }
 
-async function getApiNinjasAirQuality(city: string) {
+async function getApiNinjasAirQuality(city: string): Promise<AirQuality | null> {
     const apiKey = process.env.API_NINJAS_KEY;
     if (!apiKey) {
         console.warn("API-Ninjas key not found. Skipping air quality fetch.");
@@ -53,15 +53,16 @@ async function getApiNinjasAirQuality(city: string) {
              console.error(`API Ninjas returned an error for ${city}: ${data.error}`);
              return null;
         }
-
+        
+        const defaultPollutant = { concentration: 0, aqi: 0 };
         return {
-            aqi: data.overall_aqi ?? 0,
-            pm25: data['PM2.5']?.concentration ?? 0,
-            pm10: data.PM10?.concentration ?? 0,
-            so2: data.SO2?.concentration ?? 0,
-            no2: data.NO2?.concentration ?? 0,
-            o3: data.O3?.concentration ?? 0,
-            co: data.CO?.concentration ?? 0,
+            overall_aqi: data.overall_aqi ?? 0,
+            CO: data.CO ?? defaultPollutant,
+            NO2: data.NO2 ?? defaultPollutant,
+            O3: data.O3 ?? defaultPollutant,
+            SO2: data.SO2 ?? defaultPollutant,
+            'PM2.5': data['PM2.5'] ?? defaultPollutant,
+            PM10: data.PM10 ?? defaultPollutant,
         };
 
     } catch (error) {
@@ -164,8 +165,15 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
       // If API Ninjas call failed or wasn't possible, create fallback AQI data.
       if (!airData) {
           console.warn("Could not fetch air quality from API-Ninjas. Creating fallback data.");
+          const defaultPollutant = { concentration: 0, aqi: 0 };
           airData = {
-            aqi: 0, pm25: 0, pm10: 0, so2: 0, no2: 0, o3: 0, co: 0,
+            overall_aqi: 0,
+            CO: defaultPollutant,
+            NO2: defaultPollutant,
+            O3: defaultPollutant,
+            SO2: defaultPollutant,
+            'PM2.5': defaultPollutant,
+            PM10: defaultPollutant,
           }
       }
 

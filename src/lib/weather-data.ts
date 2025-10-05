@@ -12,14 +12,19 @@ export type WeatherIconType =
   | 'Fog'
   | 'Windy';
 
-export interface AirQuality {
+export interface PollutantData {
+    concentration: number;
     aqi: number;
-    pm25: number;
-    pm10: number;
-    so2: number;
-    no2: number;
-    o3: number;
-    co: number;
+}
+
+export interface AirQuality {
+    overall_aqi: number;
+    CO: PollutantData;
+    NO2: PollutantData;
+    O3: PollutantData;
+    SO2: PollutantData;
+    'PM2.5': PollutantData;
+    PM10: PollutantData;
 }
 
 export interface CurrentWeather {
@@ -187,6 +192,18 @@ export const getMockWeatherData = (lat: number, lon: number, city?: string): Wea
     const now = new Date();
 
     const currentCondition = getRandom(weatherConditions, seed);
+    
+    const defaultPollutant = { concentration: 0, aqi: 0 };
+    const airQuality: AirQuality = {
+      overall_aqi: Math.round(randomBetween(10, 150, seed + 2)),
+      CO: { concentration: Number(randomBetween(0.1, 2, seed + 8).toFixed(2)), aqi: Math.round(randomBetween(0, 5, seed + 13)) },
+      NO2: { concentration: Number(randomBetween(5, 40, seed + 6).toFixed(2)), aqi: Math.round(randomBetween(0, 10, seed + 14)) },
+      O3: { concentration: Number(randomBetween(20, 100, seed + 7).toFixed(2)), aqi: Math.round(randomBetween(20, 80, seed + 15)) },
+      SO2: { concentration: Number(randomBetween(1, 20, seed + 5).toFixed(2)), aqi: Math.round(randomBetween(0, 5, seed + 16)) },
+      'PM2.5': { concentration: Number(randomBetween(5, 70, seed + 3).toFixed(2)), aqi: Math.round(randomBetween(10, 80, seed + 17)) },
+      PM10: { concentration: Number(randomBetween(10, 100, seed + 4).toFixed(2)), aqi: Math.round(randomBetween(10, 80, seed + 18)) }
+    };
+
     const current: CurrentWeather = {
         locationName: city || `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`,
         temp: Math.round(randomBetween(15, 25, seed)),
@@ -198,15 +215,7 @@ export const getMockWeatherData = (lat: number, lon: number, city?: string): Wea
         icon: currentCondition.icon,
         humidity: Math.round(randomBetween(40, 80, seed)),
         wind: Math.round(randomBetween(5, 25, seed + 1)),
-        airQuality: {
-            aqi: Math.round(randomBetween(10, 150, seed + 2)),
-            pm25: Number(randomBetween(5, 70, seed + 3).toFixed(2)),
-            pm10: Number(randomBetween(10, 100, seed + 4).toFixed(2)),
-            so2: Number(randomBetween(1, 20, seed + 5).toFixed(2)),
-            no2: Number(randomBetween(5, 40, seed + 6).toFixed(2)),
-            o3: Number(randomBetween(20, 100, seed + 7).toFixed(2)),
-            co: Number(randomBetween(0.1, 2, seed + 8).toFixed(2)),
-        }
+        airQuality
     };
 
     const hourly: HourlyForecast[] = Array.from({ length: 24 }, (_, i) => {

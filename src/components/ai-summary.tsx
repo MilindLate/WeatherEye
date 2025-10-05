@@ -20,7 +20,7 @@ export default function AiSummary({ todayForecast, airQuality }: { todayForecast
           condition: todayForecast.condition,
           precipitationProbability: todayForecast.precipitation,
           windSpeed: todayForecast.wind,
-          airQualityIndex: airQuality.aqi,
+          airQualityIndex: airQuality.overall_aqi,
         };
         const result = await getAiSummary(input);
         setSummary(result);
