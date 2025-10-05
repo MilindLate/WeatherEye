@@ -155,8 +155,12 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
           fetch(forecastUrl.toString()),
       ]);
 
-      if (!weatherRes.ok || !forecastRes.ok) {
-          console.error('One or more OWM API requests failed. Falling back to mock data');
+      if (!weatherRes.ok) {
+          console.error(`OWM API request failed: ${weatherRes.statusText}`);
+          return getMockWeatherData(lat, lon, city);
+      }
+      if (!forecastRes.ok) {
+          console.error(`OWM forecast request failed: ${forecastRes.statusText}`);
           return getMockWeatherData(lat, lon, city);
       }
 
