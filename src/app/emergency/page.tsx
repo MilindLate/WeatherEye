@@ -1,6 +1,8 @@
 
 'use client';
 
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
@@ -26,13 +28,21 @@ const safetyTips = [
     "Conserve Power: Use your phone only when necessary to save battery.",
 ];
 
+function EmergencyContent() {
+    const searchParams = useSearchParams();
+    const city = searchParams.get('city');
 
-export default function EmergencyPage() {
+    const getDashboardLink = () => {
+        const params = new URLSearchParams();
+        if (city) params.set('city', city);
+        return `/dashboard?${params.toString()}`;
+    }
+
     return (
         <div className="min-h-screen w-full bg-background">
             <div className="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8 space-y-8">
                  <Button asChild variant="outline" className="mb-4">
-                    <Link href="/dashboard">
+                    <Link href={getDashboardLink()}>
                         <ArrowLeft className="mr-2" />
                         Back to Dashboard
                     </Link>
@@ -92,4 +102,13 @@ export default function EmergencyPage() {
             </div>
         </div>
     );
+}
+
+
+export default function EmergencyPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+            <EmergencyContent />
+        </Suspense>
+    )
 }
