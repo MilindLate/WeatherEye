@@ -193,22 +193,27 @@ const weatherConditions: {condition: string, icon: WeatherIconType}[] = [
 const getRandom = (arr: any[], seed: number) => arr[Math.floor(seed) % arr.length];
 const randomBetween = (min: number, max: number, seed: number) => Math.random() * (max-min) + min;
 
-export const getMockWeatherData = (lat: number, lon: number, city?: string): WeatherData => {
+export const getMockWeatherData = (lat: number, lon: number, city?: string, airQualityData?: AirQuality | null): WeatherData => {
     const seed = Math.abs((lat + lon) * 1000);
     const now = new Date();
 
     const currentCondition = getRandom(weatherConditions, seed);
     
-    const defaultPollutant = { concentration: 0, aqi: 0 };
-    const airQuality: AirQuality = {
-      overall_aqi: Math.round(randomBetween(10, 150, seed + 2)),
-      CO: { concentration: Number(randomBetween(0.1, 2, seed + 8).toFixed(2)), aqi: Math.round(randomBetween(0, 5, seed + 13)) },
-      NO2: { concentration: Number(randomBetween(5, 40, seed + 6).toFixed(2)), aqi: Math.round(randomBetween(0, 10, seed + 14)) },
-      O3: { concentration: Number(randomBetween(20, 100, seed + 7).toFixed(2)), aqi: Math.round(randomBetween(20, 80, seed + 15)) },
-      SO2: { concentration: Number(randomBetween(1, 20, seed + 5).toFixed(2)), aqi: Math.round(randomBetween(0, 5, seed + 16)) },
-      'PM2.5': { concentration: Number(randomBetween(5, 70, seed + 3).toFixed(2)), aqi: Math.round(randomBetween(10, 80, seed + 17)) },
-      PM10: { concentration: Number(randomBetween(10, 100, seed + 4).toFixed(2)), aqi: Math.round(randomBetween(10, 80, seed + 18)) }
-    };
+    let airQuality: AirQuality | null = airQualityData || null;
+
+    if (!airQuality) {
+        const defaultPollutant = { concentration: 0, aqi: 0 };
+        airQuality = {
+            overall_aqi: Math.round(randomBetween(10, 150, seed + 2)),
+            CO: { concentration: Number(randomBetween(0.1, 2, seed + 8).toFixed(2)), aqi: Math.round(randomBetween(0, 5, seed + 13)) },
+            NO2: { concentration: Number(randomBetween(5, 40, seed + 6).toFixed(2)), aqi: Math.round(randomBetween(0, 10, seed + 14)) },
+            O3: { concentration: Number(randomBetween(20, 100, seed + 7).toFixed(2)), aqi: Math.round(randomBetween(20, 80, seed + 15)) },
+            SO2: { concentration: Number(randomBetween(1, 20, seed + 5).toFixed(2)), aqi: Math.round(randomBetween(0, 5, seed + 16)) },
+            'PM2.5': { concentration: Number(randomBetween(5, 70, seed + 3).toFixed(2)), aqi: Math.round(randomBetween(10, 80, seed + 17)) },
+            PM10: { concentration: Number(randomBetween(10, 100, seed + 4).toFixed(2)), aqi: Math.round(randomBetween(10, 80, seed + 18)) }
+        };
+    }
+
 
     const current: CurrentWeather = {
         locationName: city || `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`,

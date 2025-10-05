@@ -25,7 +25,7 @@ export async function getAgriculturalAdvice(input: GenerateAgriculturalAdviceInp
 }
 
 export async function getGlobalAlerts(): Promise<GenerateGlobalAlertsOutput | null> {
-    try {
+     try {
         return await generateGlobalAlerts();
     } catch (error) {
         console.error("Global alerts generation failed:", error);
@@ -33,44 +33,45 @@ export async function getGlobalAlerts(): Promise<GenerateGlobalAlertsOutput | nu
     }
 }
 
-async function getApiNinjasAirQuality(city: string): Promise<AirQuality | null> {
-    const apiKey = process.env.API_NINJAS_KEY;
-    if (!apiKey) {
-        console.warn("API-Ninjas key not found. Skipping air quality fetch.");
-        return null;
-    }
 
-    try {
-        const url = `https://api.api-ninjas.com/v1/airquality?city=${city}`;
-        const response = await fetch(url, { headers: { 'X-Api-Key': apiKey } });
-        if (!response.ok) {
-            console.error(`API Ninjas request failed for ${city}: ${response.statusText}`);
+async function getApiNinjasAirQuality(city: string): Promise<AirQuality | null> {
+        const apiKey = process.env.API_NINJAS_KEY;
+        if (!apiKey) {
+            console.warn("API-Ninjas key not found. Skipping air quality fetch.");
             return null;
         }
-        const data = await response.json();
-        
-        if (data.error) {
-             console.error(`API Ninjas returned an error for ${city}: ${data.error}`);
-             return null;
-        }
-        
-        // Ensure all expected fields are present, providing defaults if they are not.
-        const defaultPollutant = { concentration: 0, aqi: 0 };
-        return {
-            overall_aqi: data.overall_aqi ?? 0,
-            CO: data.CO ?? defaultPollutant,
-            NO2: data.NO2 ?? defaultPollutant,
-            O3: data.O3 ?? defaultPollutant,
-            SO2: data.SO2 ?? defaultPollutant,
-            'PM2.5': data['PM2.5'] ?? defaultPollutant,
-            PM10: data.PM10 ?? defaultPollutant,
-        };
 
-    } catch (error) {
-        console.error("Error fetching API Ninjas air quality:", error);
-        return null;
+        try {
+            const url = `https://api.api-ninjas.com/v1/airquality?city=${city}`;
+            const response = await fetch(url, { headers: { 'X-Api-Key': apiKey } });
+            if (!response.ok) {
+                console.error(`API Ninjas request failed for ${city}: ${response.statusText}`);
+                return null;
+            }
+            const data = await response.json();
+            
+            if (data.error) {
+                 console.error(`API Ninjas returned an error for ${city}: ${data.error}`);
+                 return null;
+            }
+            
+            // Ensure all expected fields are present, providing defaults if they are not.
+            const defaultPollutant = { concentration: 0, aqi: 0 };
+            return {
+                overall_aqi: data.overall_aqi ?? 0,
+                CO: data.CO ?? defaultPollutant,
+                NO2: data.NO2 ?? defaultPollutant,
+                O3: data.O3 ?? defaultPollutant,
+                SO2: data.SO2 ?? defaultPollutant,
+                'PM2.5': data['PM2.5'] ?? defaultPollutant,
+                PM10: data.PM10 ?? defaultPollutant,
+            };
+
+        } catch (error) {
+            console.error("Error fetching API Ninjas air quality:", error);
+            return null;
+        }
     }
-}
 
 
 export async function getRealtimeWeatherData(location: { lat: number, lon: number } | { city: string }): Promise<WeatherData | null> {
@@ -91,6 +92,7 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
     
     let lat: number, lon: number;
     let city: string | undefined;
+    let airData: AirQuality | null = null;
 
     try {
       if ('city' in location) {
@@ -99,15 +101,18 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
         geoUrl.searchParams.set('q', city);
         geoUrl.searchParams.set('limit', '1');
         geoUrl.searchParams.set('appid', owmApiKey);
+        
         const geoResponse = await fetch(geoUrl.toString());
          if (!geoResponse.ok) {
             console.error(`Failed to geocode city ${city}: ${geoResponse.statusText}`);
-            return getMockWeatherData(51.5072, -0.1276, city);
+            if (city) airData = await getApiNinjasAirQuality(city);
+            return getMockWeatherData(51.5072, -0.1276, city, airData);
         }
         const geoData = await geoResponse.json();
         if (!geoData || geoData.length === 0) {
             console.error(`Could not find location for city: ${city}`);
-            return getMockWeatherData(51.5072, -0.1276, city);
+            if (city) airData = await getApiNinjasAirQuality(city);
+            return getMockWeatherData(51.5072, -0.1276, city, airData);
         }
         lat = geoData[0].lat;
         lon = geoData[0].lon;
@@ -130,6 +135,10 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
         }
       }
       
+      if (city) {
+          airData = await getApiNinjasAirQuality(city);
+      }
+
       const commonParams = {
         appid: owmApiKey,
         units: 'metric',
@@ -145,23 +154,15 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
       forecastUrl.searchParams.set('appid', commonParams.appid);
       forecastUrl.searchParams.set('units', commonParams.units);
 
-      let airData = null;
-      if (city) {
-          airData = await getApiNinjasAirQuality(city);
-      }
 
       const [weatherRes, forecastRes] = await Promise.all([
           fetch(weatherUrl.toString()),
           fetch(forecastUrl.toString()),
       ]);
 
-      if (!weatherRes.ok) {
-          console.error(`OWM API request failed: ${weatherRes.statusText}`);
-          return getMockWeatherData(lat, lon, city);
-      }
-      if (!forecastRes.ok) {
-          console.error(`OWM forecast request failed: ${forecastRes.statusText}`);
-          return getMockWeatherData(lat, lon, city);
+      if (!weatherRes.ok || !forecastRes.ok) {
+          console.error(`One or more OWM API requests failed. Falling back to mock data`);
+          return getMockWeatherData(lat, lon, city, airData);
       }
 
       const weatherData = await weatherRes.json();
@@ -186,6 +187,6 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
 
     } catch (error) {
         console.error("Error fetching real-time weather data:", error);
-        return getMockWeatherData(51.5072, -0.1276, city);
+        return getMockWeatherData(51.5072, -0.1276, city, airData);
     }
 }
