@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -17,11 +17,6 @@ const Map = dynamic(() => import('@/components/map'), {
 
 function MapContent() {
     const searchParams = useSearchParams();
-    const [isClient, setIsClient] = useState(false);
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
 
     const getDashboardLink = () => {
         const city = searchParams.get('city');
@@ -57,7 +52,7 @@ function MapContent() {
 
                 <div className="h-[calc(100vh-200px)] w-full rounded-lg overflow-hidden border">
                    <Suspense fallback={<Skeleton className="h-full w-full" />}>
-                        {isClient ? <Map /> : <Skeleton className="h-full w-full" />}
+                        <Map />
                    </Suspense>
                 </div>
             </div>
