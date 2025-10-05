@@ -30,11 +30,18 @@ const safetyTips = [
 
 function EmergencyContent() {
     const searchParams = useSearchParams();
-    const city = searchParams.get('city');
-
+    
     const getDashboardLink = () => {
+        const city = searchParams.get('city');
+        const lat = searchParams.get('lat');
+        const lon = searchParams.get('lon');
         const params = new URLSearchParams();
-        if (city) params.set('city', city);
+        if (city) {
+            params.set('city', city);
+        } else if (lat && lon) {
+            params.set('lat', lat);
+            params.set('lon', lon);
+        }
         return `/dashboard?${params.toString()}`;
     }
 
