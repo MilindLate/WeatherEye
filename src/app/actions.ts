@@ -185,38 +185,3 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
         return getMockWeatherData(51.5072, -0.1276, city);
     }
 }
-
-export async function getMapData() {
-    'use server';
-
-    const apiKey = process.env.AQICN_API_KEY;
-    if (!apiKey) {
-        throw new Error("AQICN API key not found.");
-    }
-    
-    // Bounding box for a wide area. Format: lat,lng,lat,lng
-    // Let's cover a large part of the globe.
-    const latLngBox = "85,-180,-85,180";
-
-    try {
-        const url = `https://api.waqi.info/map/bounds/?latlng=${latLngBox}&token=${apiKey}`;
-        const response = await fetch(url, { next: { revalidate: 3600 } }); // Revalidate every hour
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`AQICN API request failed: ${response.statusText}`, errorText);
-            throw new Error(`Failed to fetch map data: ${response.statusText}`);
-        }
-        const data = await response.json();
-        
-        if (data.status !== "ok") {
-            console.error("AQICN API returned an error:", data.data);
-            throw new Error(`AQICN API error: ${data.data}`);
-        }
-        
-        return data.data;
-
-    } catch (error) {
-        console.error("Error fetching AQICN map data:", error);
-        return [];
-    }
-}
