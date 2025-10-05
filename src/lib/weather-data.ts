@@ -82,7 +82,7 @@ const formatTimeForTimezone = (utcSeconds: number, timezoneOffset: number): stri
 };
 
 
-export const transformWeatherData = (weather: any, forecast: any, air: any): WeatherData => {
+export const transformWeatherData = (weather: any, forecast: any, air: AirQuality): WeatherData => {
     const timezoneOffset = weather.timezone;
 
     const current: CurrentWeather = {
@@ -96,18 +96,10 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
         icon: weather.weather[0] ? mapOwmIconToIconType(weather.weather[0].icon) : 'Sunny',
         humidity: weather.main.humidity,
         wind: Math.round(weather.wind.speed * 3.6), // m/s to km/h
-        airQuality: {
-            aqi: air.list[0].aqi,
-            pm25: air.list[0].pm25,
-            pm10: air.list[0].pm10,
-            so2: air.list[0].so2,
-            no2: air.list[0].no2,
-            o3: air.list[0].o3,
-            co: air.list[0].co,
-        }
+        airQuality: air
     };
 
-    const hourly: HourlyForecast[] = forecast.list.slice(0, 8).map((item: any) => ({
+    const hourly: HourlyForecast[] = forecast.list.slice(0, 24).map((item: any) => ({
         time: formatTimeForTimezone(item.dt, timezoneOffset),
         temp: Math.round(item.main.temp),
         precipitation: item.pop,
@@ -117,10 +109,37 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
 
 
     const dailyForecasts: { [key: string]: DailyForecast } = {};
+    const todayStr = format(toZonedTime(fromUnixTime(weather.dt), 'Etc/UTC'), 'yyyy-MM-dd', { timeZone: 'Etc/UTC' });
+    
+    // Add today's min/max from the current weather data as the initial values for today
+    const todayDay = format(toZonedTime(fromUnixTime(weather.dt + timezoneOffset), 'Etc/UTC'), 'EEE', { timeZone: 'Etc/UTC' });
+    dailyForecasts[todayDay] = {
+      day: "Today",
+      temp: { min: weather.main.temp_min, max: weather.main.temp_max },
+      condition: weather.weather[0] ? weather.weather[0].description : 'Clear',
+      icon: weather.weather[0] ? mapOwmIconToIconType(weather.weather[0].icon) : 'Sunny',
+      precipitation: 0, // OWM forecast starts in a few hours, so we assume 0 for now.
+      wind: weather.wind.speed,
+    }
 
     forecast.list.forEach((item: any) => {
-        const localDate = fromUnixTime(item.dt + timezoneOffset);
-        const day = format(localDate, 'EEE', { timeZone: 'Etc/UTC' });
+        const itemDate = toZonedTime(fromUnixTime(item.dt + timezoneOffset), 'Etc/UTC');
+        const day = format(itemDate, 'EEE', { timeZone: 'Etc/UTC' });
+        
+        // Skip adding data to "Today" if it's already created from current weather
+        if (dailyForecasts[day] && dailyForecasts[day].day === "Today") {
+           dailyForecasts[day].temp.min = Math.min(dailyForecasts[day].temp.min, item.main.temp);
+           dailyForecasts[day].temp.max = Math.max(dailyForecasts[day].temp.max, item.main.temp);
+           dailyForecasts[day].precipitation = Math.max(dailyForecasts[day].precipitation, item.pop);
+           dailyForecasts[day].wind = Math.max(dailyForecasts[day].wind, item.wind.speed);
+
+           // update icon/condition for midday
+            if (format(itemDate, 'HH', { timeZone: 'Etc/UTC' }) === '12') {
+                 dailyForecasts[day].condition = item.weather[0] ? item.weather[0].description : 'Clear';
+                 dailyForecasts[day].icon = item.weather[0] ? mapOwmIconToIconType(item.weather[0].icon) : 'Sunny';
+            }
+            return;
+        }
 
         if (!dailyForecasts[day]) {
             dailyForecasts[day] = {
@@ -135,7 +154,6 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
             dailyForecasts[day].temp.min = Math.min(dailyForecasts[day].temp.min, item.main.temp);
             dailyForecasts[day].temp.max = Math.max(dailyForecasts[day].temp.max, item.main.temp);
             
-            const itemDate = fromUnixTime(item.dt + timezoneOffset);
             if (format(itemDate, 'HH', { timeZone: 'Etc/UTC' }) === '12') {
                  dailyForecasts[day].condition = item.weather[0] ? item.weather[0].description : 'Clear';
                  dailyForecasts[day].icon = item.weather[0] ? mapOwmIconToIconType(item.weather[0].icon) : 'Sunny';
@@ -146,13 +164,7 @@ export const transformWeatherData = (weather: any, forecast: any, air: any): Wea
     });
 
     const daily = Object.values(dailyForecasts).slice(0, 7);
-    if (daily.length > 0) {
-      const today = format(toZonedTime(new Date(), 'Etc/UTC'), 'EEE', { timeZone: 'Etc/UTC' });
-      if (daily[0].day === today) {
-          daily[0].day = "Today";
-      }
-    }
-
+    
     return { current, hourly, daily };
 };
 

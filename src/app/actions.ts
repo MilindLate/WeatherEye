@@ -35,7 +35,10 @@ export async function getGlobalAlerts(): Promise<GenerateGlobalAlertsOutput | nu
 
 async function getApiNinjasAirQuality(city: string) {
     const apiKey = process.env.API_NINJAS_KEY;
-    if (!apiKey) return null;
+    if (!apiKey) {
+        console.warn("API-Ninjas key not found. Skipping air quality fetch.");
+        return null;
+    }
 
     try {
         const url = `https://api.api-ninjas.com/v1/airquality?city=${city}`;
@@ -46,9 +49,15 @@ async function getApiNinjasAirQuality(city: string) {
         }
         const data = await response.json();
         
-        // Transform the data to match our AirQuality type
+        // The API returns an object where keys are pollutant names
+        // and overall_aqi is at the top level.
+        if (data.error) {
+             console.error(`API Ninjas returned an error for ${city}: ${data.error}`);
+             return null;
+        }
+
         return {
-            aqi: data.overall_aqi,
+            aqi: data.overall_aqi ?? 0,
             pm25: data['PM2.5']?.concentration ?? 0,
             pm10: data.PM10?.concentration ?? 0,
             so2: data.SO2?.concentration ?? 0,
@@ -102,13 +111,12 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
         }
         lat = geoData[0].lat;
         lon = geoData[0].lon;
-        // Use the canonical name from the geocoding response
-        city = geoData[0].name;
+        city = geoData[0].name; // Use the canonical name from the geocoding response
       } else {
         lat = location.lat;
         lon = location.lon;
         // Reverse geocode to get city name for API Ninjas
-        const reverseGeoUrl = new URL('http://api.openweathermap.org/geo/1.0/reverse');
+        const reverseGeoUrl = new URL('https://api.openweathermap.org/geo/1.0/reverse');
         reverseGeoUrl.searchParams.set('lat', lat.toString());
         reverseGeoUrl.searchParams.set('lon', lon.toString());
         reverseGeoUrl.searchParams.set('limit', '1');
@@ -123,21 +131,19 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
       }
       
       const commonParams = {
-        lat: lat.toString(),
-        lon: lon.toString(),
         appid: owmApiKey,
         units: 'metric',
       };
 
-      weatherUrl.searchParams.set('lat', commonParams.lat);
-      weatherUrl.searchParams.set('lon', commonParams.lon);
+      weatherUrl.searchParams.set('lat', lat.toString());
+      weatherUrl.searchParams.set('lon', lon.toString());
       weatherUrl.searchParams.set('appid', commonParams.appid);
       weatherUrl.searchParams.set('units', commonParams.units);
       
-      forecastUrl.searchParams.set('lat', commonParams.lat);
-      forecastUrl.searchParams.set('lon', commonParams.lon);
+      forecastUrl.searchParams.set('lat', lat.toString());
+      forecastUrl.searchParams.set('lon', lon.toString());
       forecastUrl.searchParams.set('appid', commonParams.appid);
-      forecastUrl.search_params.set('units', commonParams.units);
+      forecastUrl.searchParams.set('units', commonParams.units);
 
       let airData = null;
       if (city) {
@@ -165,7 +171,7 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
           }
       }
 
-      return transformWeatherData(weatherData, forecastData, { list: [airData] });
+      return transformWeatherData(weatherData, forecastData, airData);
 
     } catch (error) {
         console.error("Error fetching real-time weather data:", error);
