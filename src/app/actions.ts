@@ -173,6 +173,7 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
         let weatherData, forecastData;
         try {
             activeKey = primaryKey;
+            console.log(`Fetching OWM data with primary key for ${city || `lat/lon ${lat}/${lon}`}`);
             [weatherData, forecastData] = await Promise.all([
                 fetchOwmData(weatherUrl, activeKey),
                 fetchOwmData(forecastUrl, activeKey),
@@ -180,6 +181,7 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
         } catch (error) {
             console.warn(`Primary OWM key failed. Trying fallback. Error:`, (error as Error).message);
             activeKey = fallbackKey;
+            console.log(`Fetching OWM data with fallback key for ${city || `lat/lon ${lat}/${lon}`}`);
             [weatherData, forecastData] = await Promise.all([
                 fetchOwmData(weatherUrl, activeKey),
                 fetchOwmData(forecastUrl, activeKey),
