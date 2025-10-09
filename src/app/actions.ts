@@ -46,7 +46,7 @@ async function getApiNinjasAirQuality(city: string): Promise<AirQuality | null> 
         const url = `https://api.api-ninjas.com/v1/airquality?city=${city}`;
         const response = await fetch(url, { headers: { 'X-Api-Key': apiKey } });
         if (!response.ok) {
-            console.error(`API Ninjas request failed for ${city}: ${response.statusText}`);
+            console.error(`API Ninjas request failed for ${city}: ${response.status} ${response.statusText}`);
             return null;
         }
         const data = await response.json();
@@ -159,7 +159,7 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
       if (!weatherRes.ok || !forecastRes.ok) {
           const weatherError = !weatherRes.ok ? await weatherRes.text() : '';
           const forecastError = !forecastRes.ok ? await forecastRes.text() : '';
-          console.error(`One or more OWM API requests failed.`, { weatherStatus: weatherRes.status, forecastStatus: forecastRes.status, weatherError, forecastError });
+          console.error(`One or more OWM API requests failed. Falling back to mock data.`, { weatherStatus: weatherRes.status, forecastStatus: forecastRes.status, weatherError, forecastError });
           return getMockWeatherData(lat, lon, city, airData);
       }
 
