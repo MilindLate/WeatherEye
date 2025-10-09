@@ -45,21 +45,23 @@ function AgricultureContent() {
 
     const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
     const [advice, setAdvice] = useState<GenerateAgriculturalAdviceOutput | null>(null);
-    const [isPending, startTransition] = useTransition();
-    const [loadingWeather, setLoadingWeather] = useState(true);
+    const [isAiPending, startAiTransition] = useTransition();
+    const [isWeatherLoading, setIsWeatherLoading] = useState(true);
     const [aiError, setAiError] = useState(false);
 
     useEffect(() => {
         const fetchWeather = async () => {
             if (!city) {
-                setLoadingWeather(false);
+                setIsWeatherLoading(false);
                 return;
             };
 
-            setLoadingWeather(true);
+            setIsWeatherLoading(true);
+            setWeatherData(null);
+            setAdvice(null);
             const data = await getRealtimeWeatherData({ city });
             setWeatherData(data);
-            setLoadingWeather(false);
+            setIsWeatherLoading(false);
         };
         fetchWeather();
     }, [city]);
@@ -67,7 +69,7 @@ function AgricultureContent() {
     useEffect(() => {
         if (weatherData?.daily[0] && weatherData.current.locationName) {
             const todayForecast = weatherData.daily[0];
-            startTransition(async () => {
+            startAiTransition(async () => {
                 setAdvice(null);
                 setAiError(false);
                 const input = {
@@ -77,14 +79,22 @@ function AgricultureContent() {
                     condition: todayForecast.condition,
                     precipitationProbability: todayForecast.precipitation,
                 };
-                const result = await getAgriculturalAdvice(input);
-                if (result === null) {
+                try {
+                    const result = await getAgriculturalAdvice(input);
+                    if (result === null) {
+                        setAiError(true);
+                        setAdvice(null);
+                    } else {
+                        setAdvice(result);
+                    }
+                } catch (error) {
+                    console.error("AI Advice fetch failed:", error);
                     setAiError(true);
+                    setAdvice(null);
                 }
-                setAdvice(result);
             });
         }
-    }, [weatherData, city]);
+    }, [weatherData]);
 
     const todayForecast = weatherData?.daily[0];
 
@@ -94,7 +104,7 @@ function AgricultureContent() {
         return `/dashboard?${params.toString()}`;
     }
 
-    if (loadingWeather) {
+    if (isWeatherLoading) {
          return (
             <div className="min-h-screen flex flex-col items-center justify-center p-4">
                 <p className="text-muted-foreground animate-pulse">Loading location forecast...</p>
@@ -154,14 +164,14 @@ function AgricultureContent() {
                     </Card>
                 )}
 
-                {isPending || loadingWeather ? (
+                {isAiPending || isWeatherLoading ? (
                     <AdviceSkeleton />
                 ) : aiError ? (
                      <Card>
                         <CardContent className="py-12 flex flex-col items-center justify-center text-center gap-2 text-muted-foreground">
                             <ServerCrash className="w-10 h-10 text-destructive" />
                             <p>AI agricultural advice is currently unavailable.</p>
-                            <p className="text-xs">Please try again later.</p>
+                            <p className="text-xs">The service may be temporarily down or have exceeded its quota.</p>
                         </CardContent>
                     </Card>
                 ) : advice ? (
@@ -200,9 +210,11 @@ function AgricultureContent() {
                         </Card>
                     </div>
                 ) : (
-                    <Card>
-                        <CardContent className="py-12 text-center">
-                            <p className="text-muted-foreground">Could not generate agricultural advice at this time.</p>
+                     <Card>
+                        <CardContent className="py-12 flex flex-col items-center justify-center text-center gap-2 text-muted-foreground">
+                            <ServerCrash className="w-10 h-10 text-destructive" />
+                            <p>Could not generate agricultural advice.</p>
+                            <p className="text-xs">Please try changing the location or refreshing.</p>
                         </CardContent>
                     </Card>
                 )}

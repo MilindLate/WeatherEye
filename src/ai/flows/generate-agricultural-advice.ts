@@ -53,7 +53,7 @@ const prompt = ai.definePrompt({
   - Condition: {{{condition}}}
   - Precipitation Probability: {{{precipitationProbability}}}
 
-  Provide your response in the requested JSON format.`,
+  You must provide your response in the requested JSON format. Do not output anything other than the JSON object.`,
 });
 
 const generateAgriculturalAdviceFlow = ai.defineFlow(
