@@ -41,7 +41,7 @@ const prompt = ai.definePrompt({
   - Place the alerts in different countries and continents.
   - Make the summary concise but informative.
   - Assign a severity level of 'High', 'Severe', or 'Critical' to each alert.
-  - Provide the response in the requested JSON format.
+  - Provide your response in the requested JSON format. Do not output anything other than the JSON object.
   `,
 });
 
