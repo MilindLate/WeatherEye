@@ -1,3 +1,4 @@
+
 import { format, fromUnixTime, addHours, addDays, startOfDay, addSeconds } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
@@ -75,7 +76,60 @@ const mapWeatherstackIconToIconType = (iconUrl: string): WeatherIconType => {
   return 'Sunny';
 };
 
-export const transformWeatherData = (weatherstackData: any, air: AirQuality | null): WeatherData => {
+const mapOwmIconToIconType = (iconCode: string): WeatherIconType => {
+    switch (iconCode) {
+        case '01d': return 'Sunny';
+        case '01n': return 'Sunny'; // Assuming night is clear, show sun icon for simplicity
+        case '02d':
+        case '02n':
+            return 'Partly Cloudy';
+        case '03d':
+        case '03n':
+        case '04d':
+        case '04n':
+            return 'Cloudy';
+        case '09d':
+        case '09n':
+            return 'Heavy Rain';
+        case '10d':
+        case '10n':
+            return 'Rainy';
+        case '11d':
+        case '11n':
+            return 'Thunderstorm';
+        case '13d':
+        case '13n':
+            return 'Snow';
+        case '50d':
+        case '50n':
+            return 'Fog';
+        default:
+            return 'Sunny';
+    }
+};
+
+export const transformOwmForecastData = (owmForecastData: any): DailyForecast[] => {
+    if (!owmForecastData || !owmForecastData.daily) return [];
+
+    // The 'daily' array from OWM OneCall API includes today and the next 7 days.
+    // We'll take 7 days starting from today.
+    return owmForecastData.daily.slice(0, 7).map((day: any, index: number) => {
+        return {
+            day: index === 0 ? 'Today' : format(fromUnixTime(day.dt), 'EEE'),
+            temp: {
+                min: Math.round(day.temp.min),
+                max: Math.round(day.temp.max),
+            },
+            condition: day.weather[0]?.main || 'Clear',
+            icon: mapOwmIconToIconType(day.weather[0]?.icon),
+            precipitation: day.pop || 0, // Probability of precipitation
+            wind: Math.round(day.wind_speed * 3.6), // m/s to km/h
+        };
+    });
+};
+
+
+export const transformWeatherData = (weatherstackData: any, air: AirQuality | null, owmForecastData: any | null): WeatherData => {
     const { location, current: currentData } = weatherstackData;
     const now = new Date();
 
@@ -91,45 +145,49 @@ export const transformWeatherData = (weatherstackData: any, air: AirQuality | nu
         airQuality: air
     };
 
-    // Weatherstack's free plan does not provide hourly or daily forecast data.
-    // We will generate mock data for these sections to keep the UI functional.
+    // Use real forecast data if available, otherwise generate mock hourly data
+    let daily: DailyForecast[];
+    if (owmForecastData) {
+        daily = transformOwmForecastData(owmForecastData);
+    } else {
+        // Mock daily data as a fallback
+        daily = Array.from({ length: 7 }, (_, i) => {
+            const daySeed = (location.lat + location.lon) * 1000 + 100 + i;
+            const minTemp = current.temp + (Math.random() - 0.5) * 5 - (i * 0.5);
+            const maxTemp = minTemp + Math.random() * 5 + 3;
+            return {
+                day: i === 0 ? 'Today' : format(addDays(now, i), 'EEE'),
+                temp: { min: Math.round(minTemp), max: Math.round(maxTemp) },
+                condition: current.condition,
+                icon: current.icon,
+                precipitation: Math.random() > 0.7 ? Math.random() : 0,
+                wind: current.wind + (Math.random() - 0.5) * 10,
+            };
+        });
+    }
+
+     // Ensure Today's forecast uses current data more accurately if we have a forecast
+    if (daily.length > 0) {
+        daily[0] = {
+            ...daily[0],
+            condition: current.condition,
+            icon: current.icon,
+            wind: current.wind,
+        };
+    }
+
+    // Weatherstack's free plan does not provide hourly forecast data.
+    // We will generate mock data for this section to keep the UI functional.
     const hourly: HourlyForecast[] = Array.from({ length: 24 }, (_, i) => {
-        const hourSeed = (location.lat + location.lon) * 1000 + i;
         const temp = current.temp - Math.sin(i / 4) * 4 + (Math.random() - 0.5) * 2;
         return {
             time: format(addHours(now, i), 'HH:00'),
             temp: Math.round(temp),
-            precipitation: Math.random() > 0.8 ? Math.random() * 0.5 : 0, // Mock precipitation
+            precipitation: daily[0]?.precipitation || (Math.random() > 0.8 ? Math.random() * 0.5 : 0),
             condition: current.condition,
             icon: current.icon,
         };
     });
-
-    const daily: DailyForecast[] = Array.from({ length: 7 }, (_, i) => {
-        const daySeed = (location.lat + location.lon) * 1000 + 100 + i;
-        const minTemp = current.temp + (Math.random() - 0.5) * 5 - (i * 0.5);
-        const maxTemp = minTemp + Math.random() * 5 + 3;
-        return {
-            day: i === 0 ? 'Today' : format(addDays(now, i), 'EEE'),
-            temp: { min: Math.round(minTemp), max: Math.round(maxTemp) },
-            condition: current.condition,
-            icon: current.icon,
-            precipitation: Math.random() > 0.7 ? Math.random() : 0, // Mock precipitation
-            wind: current.wind + (Math.random() - 0.5) * 10,
-        };
-    });
-     // Ensure Today's forecast uses current data more accurately
-    daily[0] = {
-        day: 'Today',
-        temp: {
-            min: Math.round(current.temp - (Math.random() * 3)),
-            max: Math.round(current.temp + (Math.random() * 3)),
-        },
-        condition: current.condition,
-        icon: current.icon,
-        precipitation: hourly[0]?.precipitation || 0,
-        wind: current.wind,
-    }
 
 
     return { current, hourly, daily };

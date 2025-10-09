@@ -1,9 +1,10 @@
+
 'use server'
 
 import { generateDailyWeatherSummary, type GenerateDailyWeatherSummaryInput } from '@/ai/flows/generate-daily-weather-summary';
 import { generateAgriculturalAdvice, type GenerateAgriculturalAdviceInput, type GenerateAgriculturalAdviceOutput } from '@/ai/flows/generate-agricultural-advice';
 import { generateGlobalAlerts, type GenerateGlobalAlertsOutput } from '@/ai/flows/generate-global-alerts';
-import { transformWeatherData, type WeatherData, type AirQuality } from '@/lib/weather-data';
+import { transformWeatherData, type WeatherData, type AirQuality, transformOwmForecastData } from '@/lib/weather-data';
 
 export async function getAiSummary(input: GenerateDailyWeatherSummaryInput): Promise<string | null> {
     try {
@@ -90,6 +91,30 @@ async function fetchWeatherstackData(locationQuery: string): Promise<any> {
     return data;
 }
 
+async function fetchOwmForecastData(lat: number, lon: number): Promise<any> {
+    const apiKey = process.env.OWM_API_KEY;
+    if (!apiKey) {
+        console.warn("OpenWeatherMap API key not found. Skipping forecast fetch.");
+        return null;
+    }
+    // OWM One Call API provides daily and hourly forecasts
+    const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,minutely,hourly,alerts&appid=${apiKey}&units=metric`;
+
+    try {
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) {
+            console.error(`OWM forecast request failed: ${response.statusText}`);
+            return null;
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+         console.error("Error fetching OWM forecast data:", (error as Error).message);
+         return null;
+    }
+}
+
+
 export async function getRealtimeWeatherData(location: { lat: number, lon: number } | { city: string }): Promise<WeatherData | null> {
     
     let locationQuery: string;
@@ -103,15 +128,24 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
     }
 
     try {
+        // 1. Fetch current weather from Weatherstack
         const weatherData = await fetchWeatherstackData(locationQuery);
 
+        // Extract lat/lon from weatherstack response to use for forecast
+        const { lat, lon, name } = weatherData.location;
+
         if (!cityForAirQuality) {
-            cityForAirQuality = weatherData.location.name;
+            cityForAirQuality = name;
         }
         
+        // 2. Fetch air quality from API-Ninjas
         const airData = cityForAirQuality ? await getApiNinjasAirQuality(cityForAirQuality) : null;
         
-        return transformWeatherData(weatherData, airData);
+        // 3. Fetch forecast data from OpenWeatherMap
+        const forecastData = await fetchOwmForecastData(lat, lon);
+
+        // 4. Transform all data
+        return transformWeatherData(weatherData, airData, forecastData);
 
     } catch (error) {
         console.error("Error fetching real-time weather data:", (error as Error).message);
