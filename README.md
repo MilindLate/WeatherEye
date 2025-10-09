@@ -20,33 +20,6 @@ WeatherEye is designed to be your all-in-one guide to the weather and environmen
     *   **Emergency Assistance**: In case of severe weather, access immediate safety tips and a list of global emergency contact numbers.
     *   **Location-Based**: All data and advice are tailored to the location you choose, providing relevant and actionable information.
 
-## Application Architecture
-
-WeatherEye is built on a modern, robust, and scalable tech stack, leveraging the best of Next.js and Google's generative AI.
-
--   **Frontend**:
-    *   **Framework**: **Next.js (App Router)** using **React** and **TypeScript**.
-    *   **UI Components**: A beautiful and consistent user interface built with **ShadCN UI**.
-    *   **Styling**: **Tailwind CSS** for utility-first styling, with a customizable theme.
-    *   **Mapping**: **Leaflet** and **React-Leaflet** for interactive maps.
-
--   **Backend & Data Fetching**:
-    *   **Server Actions**: Secure and efficient communication with external APIs is handled via **Next.js Server Actions**. This keeps API keys and sensitive logic on the server, away from the client.
-    *   **Data Sources**:
-        *   **OpenWeatherMap**: Provides core weather and forecast data.
-        *   **API-Ninjas**: Supplies detailed air quality and pollutant data.
-        *   **AQICN**: Powers the real-time global air quality map overlay.
-
--   **Generative AI**:
-    *   **Engine**: **Genkit** (an open-source AI framework) integrated with **Google's Gemini models**.
-    *   **Flows**: AI logic is organized into "flows" that handle specific tasks like generating summaries, agricultural advice, and global alerts. These flows are defined on the server and called from Server Actions.
-
-## How It Benefits You
-
--   **Stay Informed**: Get a complete picture of the weather and environment, not just a temperature reading.
--   **Plan Ahead**: Use the detailed hourly and 7-day forecasts to plan your activities, travel, and agricultural efforts.
--   **Make Smarter Decisions**: Leverage AI-powered advice to make better decisions, whether you're a farmer, a traveler, or just planning your day.
--   **Stay Safe**: Access critical information during emergencies and stay aware of significant global weather events.
 
 ## Key Components & Pages
 
