@@ -55,7 +55,6 @@ async function getApiNinjasAirQuality(city: string): Promise<AirQuality | null> 
              return null;
         }
         
-        // Ensure all expected fields are present, providing defaults if they are not.
         const defaultPollutant = { concentration: 0, aqi: 0 };
         return {
             overall_aqi: data.overall_aqi ?? 0,
@@ -84,6 +83,7 @@ async function fetchOwmData(url: URL, apiKey: string) {
 }
 
 async function getOwmGeoData(location: { city: string }, apiKey: string): Promise<{lat: number, lon: number, name: string} | null> {
+    if (!apiKey) return null;
     const geoUrl = new URL('https://api.openweathermap.org/geo/1.0/direct');
     geoUrl.searchParams.set('q', location.city);
     geoUrl.searchParams.set('limit', '1');
@@ -107,14 +107,13 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
     
     let activeKey = primaryKey;
 
-    // 1. Determine Coordinates and City Name
     if ('city' in location) {
         city = location.city;
         let geoData = await getOwmGeoData({ city }, primaryKey!);
-        if (!geoData) {
-            console.warn("Primary key failed for geocoding, trying fallback.");
+        if (!geoData && fallbackKey) {
+            console.warn("Primary geocoding key failed, trying fallback.");
             activeKey = fallbackKey;
-            geoData = await getOwmGeoData({ city }, fallbackKey!);
+            geoData = await getOwmGeoData({ city }, fallbackKey);
         }
 
         if (geoData) {
@@ -143,13 +142,11 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
         }
     }
 
-    // 2. Fetch Air Quality Data (fail-safe)
     let airData: AirQuality | null = null;
     if (city) {
       airData = await getApiNinjasAirQuality(city);
     }
     
-    // 3. Fetch Weather and Forecast Data
     const weatherUrl = new URL('https://api.openweathermap.org/data/2.5/weather');
     weatherUrl.searchParams.set('lat', lat.toString());
     weatherUrl.searchParams.set('lon', lon.toString());
@@ -163,28 +160,26 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
     try {
         let weatherData, forecastData;
         try {
-             // Try with active key (which could be primary or fallback)
             [weatherData, forecastData] = await Promise.all([
                 fetchOwmData(weatherUrl, activeKey!),
                 fetchOwmData(forecastUrl, activeKey!),
             ]);
         } catch (error) {
-            console.warn(`API calls with key failed, trying another key.`, (error as Error).message);
-            // Determine which key to try next
+            console.warn(`API calls with active key (${activeKey}) failed. Trying another key.`);
             const nextKey = activeKey === primaryKey ? fallbackKey : primaryKey;
             if (nextKey && nextKey !== activeKey) {
+                 activeKey = nextKey;
                  [weatherData, forecastData] = await Promise.all([
-                    fetchOwmData(weatherUrl, nextKey!),
-                    fetchOwmData(forecastUrl, nextKey!),
+                    fetchOwmData(weatherUrl, activeKey!),
+                    fetchOwmData(forecastUrl, activeKey!),
                 ]);
             } else {
-                throw error; // Re-throw if no other key to try
+                throw error; // Re-throw if no other key to try or keys are the same
             }
         }
         
-        // If API Ninjas call failed, use mock AQI
         if (!airData) {
-            console.warn("Could not fetch air quality from API-Ninjas. Using fallback data.");
+            console.warn("Could not fetch air quality. Using fallback AQI data for transform.");
             airData = getMockWeatherData(lat, lon, city).current.airQuality;
         }
 
