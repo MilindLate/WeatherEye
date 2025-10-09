@@ -199,6 +199,7 @@ export const getMockWeatherData = (lat: number, lon: number, city?: string, airQ
 
     const currentCondition = getRandom(weatherConditions, seed);
     
+    // Use provided air quality data if available, otherwise generate mock data
     let airQuality: AirQuality | null = airQualityData || null;
 
     if (!airQuality) {

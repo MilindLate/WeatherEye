@@ -1,4 +1,3 @@
-
 'use server'
 
 import { generateDailyWeatherSummary, type GenerateDailyWeatherSummaryInput } from '@/ai/flows/generate-daily-weather-summary';
@@ -75,107 +74,124 @@ async function getApiNinjasAirQuality(city: string): Promise<AirQuality | null> 
 }
 
 
-export async function getRealtimeWeatherData(location: { lat: number, lon: number } | { city: string }): Promise<WeatherData | null> {
-    const owmApiKey = process.env.OWM_API_KEY;
-    if (!owmApiKey) {
-      console.error('OpenWeatherMap API key is missing. Falling back to mock data.');
-      if ('city' in location && location.city) {
-         return getMockWeatherData(51.5072, -0.1276, location.city);
-      }
-      if('lat' in location && 'lon' in location) {
-          return getMockWeatherData(location.lat, location.lon);
-      }
-      return getMockWeatherData(51.5072, -0.1276);
+async function fetchOwmData(url: URL, apiKey: string) {
+    url.searchParams.set('appid', apiKey);
+    const res = await fetch(url.toString());
+    if (!res.ok) {
+        throw new Error(`OWM API request failed: ${res.statusText}`);
     }
+    return res.json();
+}
 
+async function getOwmGeoData(location: { city: string }, apiKey: string): Promise<{lat: number, lon: number, name: string} | null> {
+    const geoUrl = new URL('https://api.openweathermap.org/geo/1.0/direct');
+    geoUrl.searchParams.set('q', location.city);
+    geoUrl.searchParams.set('limit', '1');
+    try {
+        const geoData = await fetchOwmData(geoUrl, apiKey);
+        if (!geoData || geoData.length === 0) return null;
+        return { lat: geoData[0].lat, lon: geoData[0].lon, name: geoData[0].name };
+    } catch (error) {
+        console.error(`Geocoding with key failed:`, (error as Error).message);
+        return null;
+    }
+}
+
+
+export async function getRealtimeWeatherData(location: { lat: number, lon: number } | { city: string }): Promise<WeatherData | null> {
+    const primaryKey = process.env.OWM_API_KEY;
+    const fallbackKey = process.env.OWM_API_KEY_FALLBACK;
+    
     let lat: number, lon: number;
     let city: string | undefined;
-    let airData: AirQuality | null = null;
+    
+    let activeKey = primaryKey;
 
-    try {
-      if ('city' in location) {
+    // 1. Determine Coordinates and City Name
+    if ('city' in location) {
         city = location.city;
-        const geoUrl = new URL('https://api.openweathermap.org/geo/1.0/direct');
-        geoUrl.searchParams.set('q', city);
-        geoUrl.searchParams.set('limit', '1');
-        geoUrl.searchParams.set('appid', owmApiKey);
-        
-        const geoResponse = await fetch(geoUrl.toString());
-         if (!geoResponse.ok) {
-            const errorText = await geoResponse.text();
-            console.error(`Failed to geocode city ${city}: ${geoResponse.statusText}`, errorText);
-            if (city) airData = await getApiNinjasAirQuality(city);
-            return getMockWeatherData(51.5072, -0.1276, city, airData);
+        let geoData = await getOwmGeoData({ city }, primaryKey!);
+        if (!geoData) {
+            console.warn("Primary key failed for geocoding, trying fallback.");
+            activeKey = fallbackKey;
+            geoData = await getOwmGeoData({ city }, fallbackKey!);
         }
-        const geoData = await geoResponse.json();
-        if (!geoData || geoData.length === 0) {
-            console.error(`Could not find location for city: ${city}`);
-            if (city) airData = await getApiNinjasAirQuality(city);
-            return getMockWeatherData(51.5072, -0.1276, city, airData);
+
+        if (geoData) {
+            lat = geoData.lat;
+            lon = geoData.lon;
+            city = geoData.name;
+        } else {
+            console.error(`Geocoding failed for city "${city}" with all keys. Falling back to mock data.`);
+            return getMockWeatherData(51.5072, -0.1276, city);
         }
-        lat = geoData[0].lat;
-        lon = geoData[0].lon;
-        city = geoData[0].name; // Use the canonical name from the geocoding response
-      } else {
+    } else {
         lat = location.lat;
         lon = location.lon;
-        // Reverse geocode to get city name for API Ninjas
+        // Attempt to get city name for air quality, but don't fail if it doesn't work
         const reverseGeoUrl = new URL('https://api.openweathermap.org/geo/1.0/reverse');
         reverseGeoUrl.searchParams.set('lat', lat.toString());
         reverseGeoUrl.searchParams.set('lon', lon.toString());
         reverseGeoUrl.searchParams.set('limit', '1');
-        reverseGeoUrl.searchParams.set('appid', owmApiKey);
-        const reverseGeoRes = await fetch(reverseGeoUrl.toString());
-        if (reverseGeoRes.ok) {
-            const reverseGeoData = await reverseGeoRes.json();
+        try {
+            const reverseGeoData = await fetchOwmData(reverseGeoUrl, activeKey!);
             if (reverseGeoData.length > 0) {
                 city = reverseGeoData[0].name;
             }
+        } catch (e) {
+            console.warn("Reverse geocoding failed, will proceed without city name for AQI.");
         }
-      }
-      
-      if (city) {
-          airData = await getApiNinjasAirQuality(city);
-      }
-      
-      const weatherUrl = new URL('https://api.openweathermap.org/data/2.5/weather');
-      weatherUrl.searchParams.set('lat', lat.toString());
-      weatherUrl.searchParams.set('lon', lon.toString());
-      weatherUrl.searchParams.set('appid', owmApiKey);
-      weatherUrl.searchParams.set('units', 'metric');
-      
-      const forecastUrl = new URL('https://api.openweathermap.org/data/2.5/forecast');
-      forecastUrl.searchParams.set('lat', lat.toString());
-      forecastUrl.searchParams.set('lon', lon.toString());
-      forecastUrl.searchParams.set('appid', owmApiKey);
-      forecastUrl.searchParams.set('units', 'metric');
+    }
 
+    // 2. Fetch Air Quality Data (fail-safe)
+    let airData: AirQuality | null = null;
+    if (city) {
+      airData = await getApiNinjasAirQuality(city);
+    }
+    
+    // 3. Fetch Weather and Forecast Data
+    const weatherUrl = new URL('https://api.openweathermap.org/data/2.5/weather');
+    weatherUrl.searchParams.set('lat', lat.toString());
+    weatherUrl.searchParams.set('lon', lon.toString());
+    weatherUrl.searchParams.set('units', 'metric');
+    
+    const forecastUrl = new URL('https://api.openweathermap.org/data/2.5/forecast');
+    forecastUrl.searchParams.set('lat', lat.toString());
+    forecastUrl.searchParams.set('lon', lon.toString());
+    forecastUrl.searchParams.set('units', 'metric');
 
-      const [weatherRes, forecastRes] = await Promise.all([
-          fetch(weatherUrl.toString()),
-          fetch(forecastUrl.toString()),
-      ]);
+    try {
+        let weatherData, forecastData;
+        try {
+             // Try with active key (which could be primary or fallback)
+            [weatherData, forecastData] = await Promise.all([
+                fetchOwmData(weatherUrl, activeKey!),
+                fetchOwmData(forecastUrl, activeKey!),
+            ]);
+        } catch (error) {
+            console.warn(`API calls with key failed, trying another key.`, (error as Error).message);
+            // Determine which key to try next
+            const nextKey = activeKey === primaryKey ? fallbackKey : primaryKey;
+            if (nextKey && nextKey !== activeKey) {
+                 [weatherData, forecastData] = await Promise.all([
+                    fetchOwmData(weatherUrl, nextKey!),
+                    fetchOwmData(forecastUrl, nextKey!),
+                ]);
+            } else {
+                throw error; // Re-throw if no other key to try
+            }
+        }
+        
+        // If API Ninjas call failed, use mock AQI
+        if (!airData) {
+            console.warn("Could not fetch air quality from API-Ninjas. Using fallback data.");
+            airData = getMockWeatherData(lat, lon, city).current.airQuality;
+        }
 
-      if (!weatherRes.ok || !forecastRes.ok) {
-          const weatherError = !weatherRes.ok ? await weatherRes.text() : '';
-          const forecastError = !forecastRes.ok ? await forecastRes.text() : '';
-          console.error(`One or more OWM API requests failed. Falling back to mock data.`, { weatherStatus: weatherRes.status, forecastStatus: forecastRes.status, weatherError, forecastError });
-          return getMockWeatherData(lat, lon, city, airData);
-      }
-
-      const weatherData = await weatherRes.json();
-      const forecastData = await forecastRes.json();
-      
-      // If API Ninjas call failed or wasn't possible, create fallback AQI data.
-      if (!airData) {
-          console.warn("Could not fetch air quality from API-Ninjas. Using fallback data.");
-          airData = getMockWeatherData(lat, lon, city).current.airQuality;
-      }
-
-      return transformWeatherData(weatherData, forecastData, airData);
+        return transformWeatherData(weatherData, forecastData, airData);
 
     } catch (error) {
-        console.error("Error fetching real-time weather data:", error);
-        return getMockWeatherData(51.5072, -0.1276, city, airData);
+        console.error("All OWM API attempts failed. Falling back to mock data.", (error as Error).message);
+        return getMockWeatherData(lat, lon, city, airData);
     }
 }
