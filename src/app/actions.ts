@@ -1,4 +1,3 @@
-
 'use server'
 
 import { generateDailyWeatherSummary, type GenerateDailyWeatherSummaryInput } from '@/ai/flows/generate-daily-weather-summary';
@@ -98,7 +97,7 @@ async function fetchOwmForecastData(lat: number, lon: number): Promise<any> {
         return null;
     }
     // OWM One Call API provides daily and hourly forecasts
-    const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,minutely,hourly,alerts&appid=${apiKey}&units=metric`;
+    const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,minutely,alerts&appid=${apiKey}&units=metric`;
 
     try {
         const response = await fetch(url, { cache: 'no-store' });
