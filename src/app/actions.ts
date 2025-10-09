@@ -45,7 +45,8 @@ async function getApiNinjasAirQuality(city: string): Promise<AirQuality | null> 
         const url = `https://api.api-ninjas.com/v1/airquality?city=${city}`;
         const response = await fetch(url, { headers: { 'X-Api-Key': apiKey } });
         if (!response.ok) {
-            console.error(`API Ninjas request failed for ${city}: ${response.status} ${response.statusText}`);
+            const errorBody = await response.text();
+            console.error(`API Ninjas request failed for ${city}: ${response.status} ${response.statusText}`, errorBody);
             return null;
         }
         const data = await response.json();
@@ -127,12 +128,12 @@ export async function getRealtimeWeatherData(location: { lat: number, lon: numbe
     } else {
         lat = location.lat;
         lon = location.lon;
-        // Attempt to get city name for air quality, but don't fail if it doesn't work
-        const reverseGeoUrl = new URL('https://api.openweathermap.org/geo/1.0/reverse');
-        reverseGeoUrl.searchParams.set('lat', lat.toString());
-        reverseGeoUrl.searchParams.set('lon', lon.toString());
-        reverseGeoUrl.searchParams.set('limit', '1');
+        
         try {
+            const reverseGeoUrl = new URL('https://api.openweathermap.org/geo/1.0/reverse');
+            reverseGeoUrl.searchParams.set('lat', lat.toString());
+            reverseGeoUrl.searchParams.set('lon', lon.toString());
+            reverseGeoUrl.searchParams.set('limit', '1');
             const reverseGeoData = await fetchOwmData(reverseGeoUrl, activeKey!);
             if (reverseGeoData.length > 0) {
                 city = reverseGeoData[0].name;
