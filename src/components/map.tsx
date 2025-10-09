@@ -38,7 +38,7 @@ export default function Map() {
           attribution: '&copy; <a href="https://waqi.info/">waqi.info</a>',
         }).addTo(mapInstanceRef.current);
       } else {
-        console.warn("AQICN API token not found. Air quality map layer will not be displayed.");
+        console.warn("NEXT_PUBLIC_AQICN_API_TOKEN not found. Air quality map layer will not be displayed.");
       }
     }
 
