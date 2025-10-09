@@ -106,14 +106,15 @@ export const transformOwmForecastData = (owmForecastData: any): DailyForecast[] 
     // The 'daily' array from OWM OneCall API includes today and the next 7 days.
     // We'll take 7 days starting from today.
     return owmForecastData.daily.slice(0, 7).map((day: any, index: number) => {
+        const weatherInfo = day.weather[0] || {};
         return {
             day: index === 0 ? 'Today' : format(fromUnixTime(day.dt), 'EEE'),
             temp: {
                 min: Math.round(day.temp.min),
                 max: Math.round(day.temp.max),
             },
-            condition: day.weather[0]?.description || 'Clear',
-            icon: mapOwmIconToIconType(day.weather[0]?.icon),
+            condition: weatherInfo.description || 'Clear',
+            icon: mapOwmIconToIconType(weatherInfo.icon),
             precipitation: day.pop || 0, // Probability of precipitation
             wind: Math.round(day.wind_speed * 3.6), // m/s to km/h
         };
