@@ -9,7 +9,7 @@ import DailyForecastComponent from './daily-forecast';
 import AiSummary from './ai-summary';
 import AirQuality from './air-quality';
 import { Button } from './ui/button';
-import { Leaf, Globe, Siren, MapPin, Map } from 'lucide-react';
+import { Leaf, Globe, Siren, MapPin, Map, BookMarked } from 'lucide-react';
 import { getRealtimeWeatherData } from '@/app/actions';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
@@ -145,10 +145,10 @@ export default function WeatherApp({ location }: WeatherAppProps) {
                         description="Global AQI data"
                     />
                      <NavCard 
-                        href={getLinkWithLocation('/emergency')}
-                        icon={<Siren size={20}/>}
-                        title="Emergency Assistance"
-                        description="Immediate safety guide"
+                        href={getLinkWithLocation('/research')}
+                        icon={<BookMarked size={20}/>}
+                        title="Research & Data"
+                        description="Links for researchers"
                     />
                 </div>
 
@@ -175,6 +175,15 @@ export default function WeatherApp({ location }: WeatherAppProps) {
                             </CardContent>
                         </Card>
                     )}
+                </div>
+
+                 <div className="py-4">
+                    <NavCard 
+                        href={getLinkWithLocation('/emergency')}
+                        icon={<Siren size={20}/>}
+                        title="Emergency Assistance"
+                        description="Immediate safety guide for severe weather"
+                    />
                 </div>
             </div>
         </div>
