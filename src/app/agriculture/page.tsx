@@ -68,6 +68,7 @@ function AgricultureContent() {
         if (weatherData?.daily[0] && weatherData.current.locationName) {
             const todayForecast = weatherData.daily[0];
             startTransition(async () => {
+                setAdvice(null);
                 setAiError(false);
                 const input = {
                     locationName: weatherData.current.locationName,
@@ -83,7 +84,7 @@ function AgricultureContent() {
                 setAdvice(result);
             });
         }
-    }, [weatherData]);
+    }, [weatherData, city]);
 
     const todayForecast = weatherData?.daily[0];
 
