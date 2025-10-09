@@ -31,11 +31,15 @@ export default function Map() {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       }).addTo(mapInstanceRef.current);
       
-      const aqicnToken = "60e070c43d591a83382cc47153b75b155a4302ad";
-      const aqiTileUrl = `https://tiles.aqicn.org/tiles/usepa-aqi/{z}/{x}/{y}.png?token=${aqicnToken}`;
-      L.tileLayer(aqiTileUrl, {
-        attribution: '&copy; <a href="https://waqi.info/">waqi.info</a>',
-      }).addTo(mapInstanceRef.current);
+      const aqicnToken = process.env.NEXT_PUBLIC_AQICN_API_TOKEN;
+      if (aqicnToken) {
+        const aqiTileUrl = `https://tiles.aqicn.org/tiles/usepa-aqi/{z}/{x}/{y}.png?token=${aqicnToken}`;
+        L.tileLayer(aqiTileUrl, {
+          attribution: '&copy; <a href="https://waqi.info/">waqi.info</a>',
+        }).addTo(mapInstanceRef.current);
+      } else {
+        console.warn("NEXT_PUBLIC_AQICN_API_TOKEN not found. Air quality map layer will not be displayed.");
+      }
     }
 
     // Cleanup function to destroy the map instance when the component unmounts.
