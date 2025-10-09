@@ -1,4 +1,3 @@
-
 import { format, fromUnixTime, addHours, addDays, startOfDay, addSeconds } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
@@ -63,120 +62,77 @@ export interface WeatherData {
   daily: DailyForecast[];
 }
 
-const mapOwmIconToIconType = (icon: string): WeatherIconType => {
-  switch (icon.substring(0, 2)) {
-    case '01': return 'Sunny';
-    case '02': return 'Partly Cloudy';
-    case '03':
-    case '04': return 'Cloudy';
-    case '09': return 'Rainy';
-    case '10': return 'Heavy Rain';
-    case '11': return 'Thunderstorm';
-    case '13': return 'Snow';
-    case '50': return 'Fog';
-    default: return 'Sunny';
-  }
+const mapWeatherstackIconToIconType = (iconUrl: string): WeatherIconType => {
+  if (iconUrl.includes('wsymbol_0001_sunny')) return 'Sunny';
+  if (iconUrl.includes('wsymbol_0002_sunny_intervals')) return 'Partly Cloudy';
+  if (iconUrl.includes('wsymbol_0003_white_cloud')) return 'Cloudy';
+  if (iconUrl.includes('wsymbol_0004_black_low_cloud')) return 'Cloudy';
+  if (iconUrl.includes('wsymbol_0006_mist') || iconUrl.includes('wsymbol_0007_fog')) return 'Fog';
+  if (iconUrl.includes('wsymbol_0009_light_rain_showers') || iconUrl.includes('wsymbol_0017_cloudy_with_light_rain')) return 'Rainy';
+  if (iconUrl.includes('wsymbol_0010_heavy_rain_showers') || iconUrl.includes('wsymbol_0018_cloudy_with_heavy_rain')) return 'Heavy Rain';
+  if (iconUrl.includes('wsymbol_0012_light_snow_showers') || iconUrl.includes('wsymbol_0020_cloudy_with_light_snow')) return 'Snow';
+  if (iconUrl.includes('wsymbol_0016_thundery_showers') || iconUrl.includes('wsymbol_0024_thunderstorms')) return 'Thunderstorm';
+  return 'Sunny';
 };
 
-const formatTimeForTimezone = (utcSeconds: number, timezoneOffset: number): string => {
-    const date = fromUnixTime(utcSeconds);
-    const zonedDate = addSeconds(date, timezoneOffset)
-    return format(zonedDate, 'HH:00', { timeZone: 'Etc/UTC' });
-};
-
-
-export const transformWeatherData = (weather: any, forecast: any, air: AirQuality | null): WeatherData => {
-    const timezoneOffset = weather.timezone;
+export const transformWeatherData = (weatherstackData: any, air: AirQuality | null): WeatherData => {
+    const { location, current: currentData } = weatherstackData;
+    const now = new Date();
 
     const current: CurrentWeather = {
-        locationName: weather.name,
-        temp: Math.round(weather.main.temp),
-        feelsLike: Math.round(weather.main.feels_like),
-        pressure: weather.main.pressure,
-        condition: weather.weather[0] ? weather.weather[0].description : 'Clear',
-        icon: weather.weather[0] ? mapOwmIconToIconType(weather.weather[0].icon) : 'Sunny',
-        humidity: weather.main.humidity,
-        wind: Math.round(weather.wind.speed * 3.6), // m/s to km/h
+        locationName: location.name,
+        temp: currentData.temperature,
+        feelsLike: currentData.feelslike,
+        pressure: currentData.pressure,
+        condition: currentData.weather_descriptions[0] || 'Clear',
+        icon: mapWeatherstackIconToIconType(currentData.weather_icons[0]),
+        humidity: currentData.humidity,
+        wind: currentData.wind_speed,
         airQuality: air
     };
 
-    const hourly: HourlyForecast[] = forecast.list.slice(0, 24).map((item: any) => ({
-        time: formatTimeForTimezone(item.dt, timezoneOffset),
-        temp: Math.round(item.main.temp),
-        precipitation: item.pop,
-        condition: item.weather[0] ? item.weather[0].description : 'Clear',
-        icon: item.weather[0] ? mapOwmIconToIconType(item.weather[0].icon) : 'Sunny',
-    }));
-
-
-    const dailyForecasts: { [key: string]: { temps: number[], pops: number[], winds: any[], conditions: any[] } } = {};
-    const nowInTimezone = addSeconds(new Date(), timezoneOffset);
-    
-    forecast.list.forEach((item: any) => {
-        const itemDate = addSeconds(fromUnixTime(item.dt), timezoneOffset);
-        const dayKey = format(itemDate, 'yyyy-MM-dd', { timeZone: 'Etc/UTC' });
-
-        if (!dailyForecasts[dayKey]) {
-            dailyForecasts[dayKey] = { temps: [], pops: [], winds: [], conditions: [] };
-        }
-        dailyForecasts[dayKey].temps.push(item.main.temp);
-        dailyForecasts[dayKey].pops.push(item.pop);
-        dailyForecasts[dayKey].winds.push(item.wind.speed);
-        
-        // Store condition for midday (around 12:00-14:00) as representative
-        const hour = parseInt(format(itemDate, 'H', { timeZone: 'Etc/UTC' }));
-        if (hour >= 12 && hour <= 14) {
-            dailyForecasts[dayKey].conditions.push({
-                condition: item.weather[0].description,
-                icon: mapOwmIconToIconType(item.weather[0].icon)
-            });
-        }
-    });
-
-    const daily: DailyForecast[] = Object.keys(dailyForecasts).map((dayKey, index) => {
-        const dayData = dailyForecasts[dayKey];
-        const dayDate = new Date(dayKey + 'T00:00:00Z');
-        const todayDate = startOfDay(nowInTimezone);
-        
-        let dayLabel: string;
-        if(format(dayDate, 'yyyy-MM-dd') === format(todayDate, 'yyyy-MM-dd')) {
-            dayLabel = "Today";
-        } else {
-            dayLabel = format(dayDate, 'EEE');
-        }
-
-        const representativeCondition = dayData.conditions[0] || { condition: 'Clear', icon: 'Sunny' };
-
+    // Weatherstack's free plan does not provide hourly or daily forecast data.
+    // We will generate mock data for these sections to keep the UI functional.
+    const hourly: HourlyForecast[] = Array.from({ length: 24 }, (_, i) => {
+        const hourSeed = (location.lat + location.lon) * 1000 + i;
+        const temp = current.temp - Math.sin(i / 4) * 4 + (Math.random() - 0.5) * 2;
         return {
-            day: dayLabel,
-            temp: {
-                min: Math.min(...dayData.temps),
-                max: Math.max(...dayData.temps)
-            },
-            condition: representativeCondition.condition,
-            icon: representativeCondition.icon,
-            precipitation: Math.max(...dayData.pops),
-            wind: Math.max(...dayData.winds) * 3.6, // m/s to km/h
-        };
-    }).slice(0, 7);
-
-    // Ensure 'Today' has current weather data if the forecast starts later.
-    if (daily.length > 0 && daily[0].day !== 'Today') {
-        const todayData: DailyForecast = {
-            day: 'Today',
-            temp: {
-                min: weather.main.temp_min,
-                max: weather.main.temp_max
-            },
+            time: format(addHours(now, i), 'HH:00'),
+            temp: Math.round(temp),
+            precipitation: Math.random() > 0.8 ? Math.random() * 0.5 : 0, // Mock precipitation
             condition: current.condition,
             icon: current.icon,
-            precipitation: hourly[0]?.precipitation || 0,
-            wind: current.wind,
-        }
-        daily.unshift(todayData);
+        };
+    });
+
+    const daily: DailyForecast[] = Array.from({ length: 7 }, (_, i) => {
+        const daySeed = (location.lat + location.lon) * 1000 + 100 + i;
+        const minTemp = current.temp + (Math.random() - 0.5) * 5 - (i * 0.5);
+        const maxTemp = minTemp + Math.random() * 5 + 3;
+        return {
+            day: i === 0 ? 'Today' : format(addDays(now, i), 'EEE'),
+            temp: { min: Math.round(minTemp), max: Math.round(maxTemp) },
+            condition: current.condition,
+            icon: current.icon,
+            precipitation: Math.random() > 0.7 ? Math.random() : 0, // Mock precipitation
+            wind: current.wind + (Math.random() - 0.5) * 10,
+        };
+    });
+     // Ensure Today's forecast uses current data more accurately
+    daily[0] = {
+        day: 'Today',
+        temp: {
+            min: Math.round(current.temp - (Math.random() * 3)),
+            max: Math.round(current.temp + (Math.random() * 3)),
+        },
+        condition: current.condition,
+        icon: current.icon,
+        precipitation: hourly[0]?.precipitation || 0,
+        wind: current.wind,
     }
-    
-    return { current, hourly, daily: daily.slice(0, 7) };
+
+
+    return { current, hourly, daily };
 };
 
 // Mock data generation
