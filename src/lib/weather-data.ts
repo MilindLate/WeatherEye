@@ -1,4 +1,5 @@
 
+
 import { format, fromUnixTime, addHours, addDays, startOfDay, addSeconds } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
@@ -77,31 +78,22 @@ const mapWeatherstackIconToIconType = (iconUrl: string): WeatherIconType => {
 };
 
 const mapOwmIconToIconType = (iconCode: string): WeatherIconType => {
-    switch (iconCode) {
-        case '01d': return 'Sunny';
-        case '01n': return 'Sunny'; // Assuming night is clear, show sun icon for simplicity
-        case '02d':
-        case '02n':
-            return 'Partly Cloudy';
-        case '03d':
-        case '03n':
-        case '04d':
-        case '04n':
+    if (!iconCode) return 'Sunny';
+    switch (iconCode.slice(0, 2)) {
+        case '01': return 'Sunny';
+        case '02': return 'Partly Cloudy';
+        case '03':
+        case '04':
             return 'Cloudy';
-        case '09d':
-        case '09n':
+        case '09':
             return 'Heavy Rain';
-        case '10d':
-        case '10n':
+        case '10':
             return 'Rainy';
-        case '11d':
-        case '11n':
+        case '11':
             return 'Thunderstorm';
-        case '13d':
-        case '13n':
+        case '13':
             return 'Snow';
-        case '50d':
-        case '50n':
+        case '50':
             return 'Fog';
         default:
             return 'Sunny';
@@ -120,7 +112,7 @@ export const transformOwmForecastData = (owmForecastData: any): DailyForecast[] 
                 min: Math.round(day.temp.min),
                 max: Math.round(day.temp.max),
             },
-            condition: day.weather[0]?.main || 'Clear',
+            condition: day.weather[0]?.description || 'Clear',
             icon: mapOwmIconToIconType(day.weather[0]?.icon),
             precipitation: day.pop || 0, // Probability of precipitation
             wind: Math.round(day.wind_speed * 3.6), // m/s to km/h
