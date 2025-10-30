@@ -3,7 +3,7 @@
 ## Core Features:
 
 - Location Detection: Automatically detect the user's current location using the browser's Geolocation API.
-- Real-Time Weather Data: Fetch real-time weather data for the user's location from a weather API.
+- Real-Time Weather Data: Fetch real-time weather data for the user's location from a API.
 - Weather Display: Display current weather conditions, including temperature, humidity, wind speed, and a descriptive icon.
 - Hourly Forecast: Provide an hourly weather forecast for the next 24 hours, including temperature and precipitation probability.
 - Daily Forecast: Show the daily weather forecast for the next 7 days, including high/low temperatures and a weather icon.
