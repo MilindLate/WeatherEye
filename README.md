@@ -12,7 +12,7 @@
 
 <br/>
 
-> **WeatherEye** goes beyond a simple forecast — it's an AI-powered weather platform with real-time conditions, personalized agricultural guidance, global environmental alerts, and live AQI maps, all in one place.
+> **WeatherEye** goes beyond a simple forecast —-- it's an AI-powered weather platform with real-time conditions, personalized agricultural guidance, global environmental alerts, and live AQI maps, all in one place.
 
 <br/>
 
